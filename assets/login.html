@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Form</title>
+    <!--base href="/dev/static/"-->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">        
+        <img src="shield.png" height="80px"/>
+        <h2>Login</h2>
+        <button class="sso-button" onclick="location.href='/auth/google'">Sign in with Google</button>
+        <form id="login-form">
+            <div class="error-message" id="error-message">Login failed. Please try again.</div>
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+            
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+            
+            <div class="forgot-password">
+                <a href="forgot.html">Forgot Password?</a>
+            </div>
+            
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const data = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+            
+            fetch('/dev/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (response.status > 201) {
+                    document.getElementById('error-message').style.display = 'block';
+                } else {
+                    document.getElementById('error-message').style.display = 'none';                    
+                }
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+                //return response.json();
+            })
+            /*.then(data => {
+                if (data.token) {
+                    localStorage.setItem('jwtToken', data.token);
+                    //window.location.href = 'dashboard.html';
+                    console.log('Status:', data);
+                }
+            })*/
+            .catch((error) => {
+                console.error('Error:', error);
+                document.getElementById('error-message').style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>

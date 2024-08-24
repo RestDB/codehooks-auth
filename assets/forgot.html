@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password</title>
+    <!--base href="/dev/static/"-->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <img src="shield.png" height="80px"/>
+        <h2>Forgot Password</h2>
+        <button class="sso-button" onclick="location.href='/auth/google'">Sign in with Google</button>
+        <form id="forgot-password-form">
+            <div class="error-message" id="error-message">Request failed. Please try again.</div>
+            <label for="email">Enter your email address</label>
+            <input type="email" id="email" name="email" required>
+            
+            <button type="submit">Submit</button>
+        </form>
+        <div class="back-to-login">
+            <a href="login.html">Back to Login</a>
+        </div>
+    </div>
+    <script>
+        document.getElementById('forgot-password-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const data = {
+                email: document.getElementById('email').value
+            };
+            
+            fetch('/submit_forgot_password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (response.status > 201) {
+                    document.getElementById('error-message').style.display = 'block';
+                } else {
+                    return response.json();
+                }
+            })
+            .then(data => {
+                if (data) {
+                    console.log('Success:', data);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                document.getElementById('error-message').style.display = 'block';
+            });
+        });
+    </script>
+</body>
+</html>
