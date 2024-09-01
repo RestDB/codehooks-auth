@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Form</title>
+    <!--base href="/dev/static/"-->
+    <link rel="stylesheet" href="styles.css">    
+
+</head>
+<body>
+    <div class="container">        
+        <img src="shield.png"/>
+        <h2>Login</h2>
+        <button class="sso-button" onclick="location.href='login/google'">Sign in with Google</button>
+        <form id="login-form">
+            <div class="error-message" id="error-message">Login failed. Please try again.</div>
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+            
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+            
+            <div class="forgot-password">
+                <a href="forgot.html">Forgot Password?</a>
+            </div>
+            
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    <script src="passwordflow.js"></script>
+</body>
+</html>

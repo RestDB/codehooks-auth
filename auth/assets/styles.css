@@ -1,3 +1,6 @@
+/*
+    General Styles
+*/
 body {
     font-family: Arial, sans-serif;
     display: flex;
@@ -21,6 +24,7 @@ body {
     text-align: center;
 }
 .container img {   
+    height: 60px;
     margin: 0; 
     display: block;
     margin: 0 auto 0px auto;
@@ -93,4 +97,19 @@ body {
     color: red;
     margin-bottom: 15px;
     text-align: center;
+}
+
+/* Media Query for Mobile Devices */
+@media (max-width: 768px) {
+    body {
+        align-items: flex-start;
+        padding-top: 20px; /* Optional: Adds some space at the top */
+        height: auto;
+    }
+
+    .container {
+        margin-top: 0;
+        box-shadow: none; /* Optional: Removes shadow for a more minimalistic design on mobile */
+        border-radius: 0;  /* Optional: Removes border-radius on mobile */
+    }
 }

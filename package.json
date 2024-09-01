@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "postinstall": "cp -r assets $INIT_CWD"
+    "build": "tsc --declaration  --outDir dist",
+    "postinstall": "cp -r auth $INIT_CWD"
   },
   "author": "jones@restdb.io",
   "license": "ISC",
@@ -14,7 +14,9 @@
     "bcryptjs": "^2.4.3",
     "codehooks-js": "latest",
     "cookie": "^0.6.0",
-    "jsonwebtoken": "^9.0.2"
+    "googleapis": "^143.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
