@@ -31,7 +31,7 @@ let settings: authSettings = {
     JWT_SECRET: process.env.JWT_SECRET || 'shhhhh',
     redirectSuccessUrl: '',
     redirectFailUrl: '',
-    useCookie: false,
+    useCookie: true,
     baseAPIRoutes: '/auth'
 }
 
@@ -71,8 +71,36 @@ export function initAuth(cohoApp: typeof app, appSettings?: authSettings) {
         cohoApp.get('/oauthcallback/google', callbackGoogle)
         console.log('Done init google auth')
     }
+    cohoApp.auth('/api/*', verifyAccessToken)
     console.log('Done init auth')
     return 'OK'
+}
+
+// auth middleware
+function verifyAccessToken(req: httpRequest, res: httpResponse, next: nextFunction) {    
+    try {
+        if (!req.headers.cookie) {
+            console.log('Missing cookie', req)
+            res.status(403).end('Missing cookie')
+        }
+        const cookies = cookie.parse(req.headers.cookie);
+        console.log('Auth access-token', cookies['access-token'] ? cookies['access-token'] : 'no tok')
+        const token = cookies['access-token'];//getTokenFromAuthorizationHeader(req.headers['authorization'])
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, settings.JWT_SECRET);
+                console.log('decoded jwt', decoded)
+                next()
+            } catch (error) {
+                next('Invalid token');
+            }
+        } else {
+            next('Missing token')
+        }
+    } catch (error:any) {
+        console.log('verifyAccessToken Error', error)
+        next(error.message)
+    }
 }
 
 // redirect user to Google
@@ -132,6 +160,8 @@ async function callbackGoogle(req: httpRequest, res: httpResponse) {
                 console.log('State mismatch. Possible CSRF attack');
                 res.end('State mismatch. Possible CSRF attack');
             } else { // Get access and refresh tokens (if access_type is offline)
+                // delete session key
+                conn.del(`session_state:${state}`, {keyspace: 'codehooks-auth'})
 
                 let { tokens } = await oauth2Client.getToken(code);
                 console.log('Tokens', tokens)
@@ -154,7 +184,19 @@ async function callbackGoogle(req: httpRequest, res: httpResponse) {
                     // upsert a user in the users collection
                     const upsertResult = await conn.updateOne('users', {"email": email},{$set: { "email": email, "google_profile": googleUser },$inc: { "visits": 1 }}, {upsert: true});
                     console.log("Upsert result", upsertResult);
-                    res.redirect(302, settings.redirectSuccessUrl)
+                    var token = jwt.sign({ email }, settings.JWT_SECRET);
+                    const acctokkey = crypto.randomBytes(32).toString('hex');
+
+                    // Store JWT in the session for 1 minute
+                    await conn.set(`jwt:${acctokkey}`, token, {ttl: 1000*60*60*24*7, keyspace: 'codehooks-auth'})
+                    if (settings.useCookie) {
+                        res.setHeader('Set-Cookie', cookie.serialize('access-token', String(token), {
+                            httpOnly: true,
+                            maxAge: 60 * 60 * 24 * 7, // 1 week                            
+                            path: '/'
+                        }));
+                    }
+                    res.redirect(302, `${settings.redirectSuccessUrl}#access_token=${acctokkey}`)
                 } catch (ex) {
                     console.error(ex)
                     res.status(500).end('Error getting profile')
@@ -221,8 +263,7 @@ export async function login(req: httpRequest, res: httpResponse) {
             if (settings.useCookie) {
                 res.setHeader('Set-Cookie', cookie.serialize('x-name', String('XX multiple galle stein er vondt'), {
                     httpOnly: true,
-                    maxAge: 60 * 60 * 24 * 7, // 1 week
-                    domain: '.api.codehooks.local.io',
+                    maxAge: 60 * 60 * 24 * 7, // 1 week                    
                     path: '/'
                 }));
             }

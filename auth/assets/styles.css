@@ -66,11 +66,21 @@ body {
 .container button:hover {
     background-color: #0056b3;
 }
-.container .sso-button {
+.container .sso-button-google {
     width: 100%;
     padding: 10px;
     margin-bottom: 15px;
     background-color: #db4437;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.container .sso-button-github {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    background-color: #2f2322;
     color: white;
     border: none;
     border-radius: 4px;
