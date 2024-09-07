@@ -9,7 +9,7 @@ function passwordSignIn(event) {
         password: document.getElementById('password').value
     };
     
-    fetch('/dev/auth/login', {
+    fetch('/auth/login', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -22,18 +22,26 @@ function passwordSignIn(event) {
         } else {
             document.getElementById('error-message').style.display = 'none';                    
         }
-        if (response.redirected) {
-            window.location.href = response.url;
-        }
-        //return response.json();
+        /*if (response.redirected) {
+            console.log("AC header", response.headers.get('Authorization'))
+            if (response.headers.has('Authorization')) {
+                window.location.href = `${response.url}#access_token=${response.headers.get('Authorization')}`;
+            } else {
+                window.location.href = `${response.url}#error=no_token`;
+            }            
+        }*/
+        return response.json();
     })
-    /*.then(data => {
-        if (data.token) {
-            localStorage.setItem('jwtToken', data.token);
-            //window.location.href = 'dashboard.html';
+    .then(data => {
+        if (data.access_token) {
             console.log('Status:', data);
+            localStorage.setItem('access_token', data.access_token);
+            window.location.href = data.redirectURL;
+            
+        } else {
+            console.error('No access token from server')
         }
-    })*/
+    })
     .catch((error) => {
         console.error('Error:', error);
         document.getElementById('error-message').style.display = 'block';

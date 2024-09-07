@@ -7,12 +7,15 @@ import * as crypto from "node:crypto";
 import fetch from 'node-fetch';
 import { google } from 'googleapis';
 
-import { app, Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
+import { app, coho, Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
 
 export type authSettings = {
     userCollection?: string,
     saltRounds?: number,
-    JWT_SECRET: string,
+    JWT_ACCESS_TOKEN_SECRET: string,
+    JWT_ACCESS_TOKEN_SECRET_EXPIRE: string,
+    JWT_REFRESH_TOKEN_SECRET:string,
+    JWT_REFRESH_TOKEN_SECRET_EXPIRE:string,
     redirectSuccessUrl?: string,
     redirectFailUrl?: string,
     useCookie?: boolean,
@@ -22,39 +25,46 @@ export type authSettings = {
         CLIENT_SECRET: string,
         REDIRECT_URI?: string,
         SCOPE?: string | string[]
-    }
+    },
+    onAuthUser?: (req:httpRequest, res:httpResponse, payload: any) => void
 }
 
 let settings: authSettings = {
     userCollection: 'users',
     saltRounds: 10, // Number of salt rounds for hashing
-    JWT_SECRET: process.env.JWT_SECRET || 'shhhhh',
+    JWT_ACCESS_TOKEN_SECRET: process.env.JWT_ACCESS_TOKEN_SECRET || 'keep_locked_away',
+    JWT_ACCESS_TOKEN_SECRET_EXPIRE: '10m',
+    JWT_REFRESH_TOKEN_SECRET: process.env.JWT_REFRESH_TOKEN_SECRET || 'bury_in_the_sand',
+    JWT_REFRESH_TOKEN_SECRET_EXPIRE: '8h',
     redirectSuccessUrl: '',
     redirectFailUrl: '',
     useCookie: true,
-    baseAPIRoutes: '/auth'
+    baseAPIRoutes: '/'
 }
 
 
-export function initAuth(cohoApp: typeof app, appSettings?: authSettings) {
+export function initAuth(cohoApp: typeof app, appSettings?: authSettings, callback?: (req:httpRequest, res:httpResponse, payload: any)=>void) {
     // merge settings
     settings = { ...settings, ...appSettings };
+    if (callback) {
+        settings.onAuthUser = callback;
+    }
 
     // allow public access to login api
-    cohoApp.auth(`${settings.baseAPIRoutes}/login*`, (req, res, next) => {
+    cohoApp.auth('/auth/login*', (req, res, next) => {
         next()
     })
 
     // user/pass from login form
-    cohoApp.post(`${settings.baseAPIRoutes}/login`, login)
+    cohoApp.post('/auth/login', login)
 
     // custom route to create a new user
-    cohoApp.post(`${settings.baseAPIRoutes}/createuser`, createUser)
+    cohoApp.post('/auth/createuser', createUser)
 
     if (settings.google !== undefined) {
         // set default URI and scope
         if (!settings.google.REDIRECT_URI) {
-            settings.google.REDIRECT_URI = '/oauthcallback/google'
+            settings.google.REDIRECT_URI = '/auth/oauthcallback/google'
         }
         if (!settings.google.SCOPE) {
             settings.google.SCOPE = [
@@ -62,37 +72,85 @@ export function initAuth(cohoApp: typeof app, appSettings?: authSettings) {
             ]
         }
         // allow public access to oauth callback
-        cohoApp.auth('/oauthcallback/*', (req, res, next) => {
+        cohoApp.auth('/auth/oauthcallback/*', (req, res, next) => {
             next()
         })
         // custom route to google auth screen
-        cohoApp.get(`${settings.baseAPIRoutes}/login/google`, loginGoogle)
+        cohoApp.get('/auth/login/google', loginGoogle)
         // OAuth callback
-        cohoApp.get('/oauthcallback/google', callbackGoogle)
-        console.log('Done init google auth')
+        cohoApp.get('/auth/oauthcallback/google', callbackGoogle)     
+        // route to get jwt from access token
+        cohoApp.auth('/auth/accesstoken', (req, res, next) => {next()})   
+        cohoApp.post('/auth/accesstoken', getJwtForAccessToken)   
+        // route to refresh access token
+        cohoApp.auth('/auth/refreshtoken', (req, res, next) => {next()})   
+        cohoApp.post('/auth/refreshtoken', refreshAccessToken)
     }
-    cohoApp.auth('/api/*', verifyAccessToken)
-    console.log('Done init auth')
+    cohoApp.auth(`${settings.baseAPIRoutes}/*`, verifyAccessToken)
     return 'OK'
+}
+
+// refresh access token
+async function refreshAccessToken(req:httpRequest, res: httpResponse) {
+    try {
+        const cookies = cookie.parse(req.headers.cookie);
+        const token = cookies['refresh-token'];
+        console.log('Auth refresh-token', token)
+        const decoded:any = jwt.verify(token, settings.JWT_REFRESH_TOKEN_SECRET);
+        console.log('verified refresh token', decoded)
+        const claims:any = {}
+        if (decoded.username) {
+            claims.username = decoded.username
+        } else if (decoded.email) {
+            claims.email = decoded.email
+        }
+        var access_token = jwt.sign(claims, settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE })
+        res.json({access_token})
+    } catch (error:any) {
+        if (error.name === "TokenExpiredError") {
+            return res.status(401).json({token_error: "Token lifetime exceeded!"})               
+        } 
+        console.error(error)
+        res.status(401).json({error: error.message})
+    }
+}
+
+// post access token and get jwt
+async function getJwtForAccessToken(req: httpRequest, res: httpResponse) {
+    console.debug('getJwtForAccessToken', req.body)
+    const {access_token} = req.body;
+    const conn = await Datastore.open()
+    const jwt = await conn.get(`refresh-token:${access_token}`, {keyspace: 'codehooks-auth'})
+    console.debug('Refresj JWT for token', jwt)
+    if (jwt) {
+        // remove after usage one time
+        //conn.del(`jwt:${access_token}`, {keyspace: 'codehooks-auth'})
+        res.json(jwt)
+    } else {
+        res.status(404).json({message: "No jwt for access key"})
+    }
 }
 
 // auth middleware
 function verifyAccessToken(req: httpRequest, res: httpResponse, next: nextFunction) {    
     try {
-        if (!req.headers.cookie) {
-            console.log('Missing cookie', req)
-            res.status(403).end('Missing cookie')
+        if (!req.headers.authorization) {
+            console.log('Missing auth header', req)
+            res.status(403).end('Missing auth header')
         }
-        const cookies = cookie.parse(req.headers.cookie);
-        console.log('Auth access-token', cookies['access-token'] ? cookies['access-token'] : 'no tok')
-        const token = cookies['access-token'];//getTokenFromAuthorizationHeader(req.headers['authorization'])
+        //const cookies = cookie.parse(req.headers.cookie);
+        //console.log('Auth access-token', cookies['access-token'] ? cookies['access-token'] : 'no tok')
+        const token = getTokenFromAuthorizationHeader(req.headers['authorization'])
         if (token) {
             try {
-                const decoded = jwt.verify(token, settings.JWT_SECRET);
-                console.log('decoded jwt', decoded)
+                const decoded = jwt.verify(token, settings.JWT_ACCESS_TOKEN_SECRET);
+                console.log('verified access token', decoded, req.headers.cookie)
                 next()
-            } catch (error) {
-                next('Invalid token');
+            } catch (error:any) {
+                if (error.name === "TokenExpiredError") {
+                    return next("Token lifetime exceeded!")               
+                }        
+                next(error);
             }
         } else {
             next('Missing token')
@@ -184,19 +242,28 @@ async function callbackGoogle(req: httpRequest, res: httpResponse) {
                     // upsert a user in the users collection
                     const upsertResult = await conn.updateOne('users', {"email": email},{$set: { "email": email, "google_profile": googleUser },$inc: { "visits": 1 }}, {upsert: true});
                     console.log("Upsert result", upsertResult);
-                    var token = jwt.sign({ email }, settings.JWT_SECRET);
                     const acctokkey = crypto.randomBytes(32).toString('hex');
 
+                    
+                    var token = jwt.sign({ email }, settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
+                    var refreshToken = jwt.sign({ email }, settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
                     // Store JWT in the session for 1 minute
-                    await conn.set(`jwt:${acctokkey}`, token, {ttl: 1000*60*60*24*7, keyspace: 'codehooks-auth'})
+                    await conn.set(`refresh-token:${refreshToken}`, refreshToken, {ttl: 1000*60*8, keyspace: 'codehooks-auth'})
+                    
                     if (settings.useCookie) {
-                        res.setHeader('Set-Cookie', cookie.serialize('access-token', String(token), {
+                        res.setHeader('Set-Cookie', cookie.serialize('refresh-token', refreshToken, {
+                            sameSite: "none",
+                            path: '/auth/refreshtoken',
+                            secure: true,
                             httpOnly: true,
-                            maxAge: 60 * 60 * 24 * 7, // 1 week                            
-                            path: '/'
+                            maxAge: 60 * 60 * 8 // 8 hours                            
                         }));
                     }
-                    res.redirect(302, `${settings.redirectSuccessUrl}#access_token=${acctokkey}`)
+                    if (settings.onAuthUser) {
+                        settings.onAuthUser(req, res, {access_token: token, user: upsertResult, method: "GOOGLE"})
+                    } else {
+                        res.redirect(302, `${settings.redirectSuccessUrl}#access_token=${token}`)
+                    }                    
                 } catch (ex) {
                     console.error(ex)
                     res.status(500).end('Error getting profile')
@@ -227,7 +294,7 @@ export function authenticate(req: httpRequest, res: httpResponse, next: nextFunc
     const token = getTokenFromAuthorizationHeader(req.headers['authorization'])
     if (token) {
         try {
-            const decoded = jwt.verify(token, settings.JWT_SECRET);
+            const decoded = jwt.verify(token, settings.JWT_ACCESS_TOKEN_SECRET);
             console.log('decoded jwt', decoded)
             next()
         } catch (error) {
@@ -255,30 +322,33 @@ export async function login(req: httpRequest, res: httpResponse) {
         console.log('aUser', aUser, match)
 
         if (match) {
-            const mezz = 'All good';
             const loginData = await db.updateOne('users', { username }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
             console.log(loginData)
-            var token = jwt.sign({ username }, settings.JWT_SECRET);
-            console.log('token', token)
+            var token = jwt.sign({ username }, settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
+            var refreshToken = jwt.sign({ username }, settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
+            
             if (settings.useCookie) {
-                res.setHeader('Set-Cookie', cookie.serialize('x-name', String('XX multiple galle stein er vondt'), {
+                res.setHeader('Set-Cookie', cookie.serialize('refresh-token', refreshToken, {
+                    sameSite: "none",
+                    path: '/auth/refreshtoken',
+                    secure: true,
                     httpOnly: true,
-                    maxAge: 60 * 60 * 24 * 7, // 1 week                    
-                    path: '/'
+                    maxAge: 60 * 60 * 8 // 8 hours                            
                 }));
             }
-            if (settings.redirectSuccessUrl !== '') {
-                res.redirect(302, settings.redirectSuccessUrl)
+            console.log('PW redir', settings.redirectSuccessUrl)
+            if (settings.onAuthUser) {
+                settings.onAuthUser(req, res, {access_token: token, user: loginData, redirectURL: settings.redirectSuccessUrl, method: "PASSWORD"})
             } else {
-                res.json({ token })
-            }
+                res.json({"access_token": token, redirectURL: settings.redirectSuccessUrl,})
+            }  
         } else {
             const loginData = await db.updateOne('users', { username }, { $set: { lastFail: new Date().toISOString() }, $inc: { "fail": 1 } })
             console.log(loginData)
             if (settings.redirectFailUrl === '') {
                 res.status(401).json({ message: "Bummer, not valid user/pass", error: true })
             } else {
-                res.redirect(302, settings.redirectFailUrl)
+                res.redirect(302, `${settings.redirectFailUrl}#code=error`)
             }
         }
     } catch (error: any) {
