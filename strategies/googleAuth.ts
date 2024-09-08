@@ -125,10 +125,10 @@ export const googleAuth: AuthStrategy = {
                     const acctokkey = crypto.randomBytes(32).toString('hex');
 
                     
-                    var token = jwt.sign({ email }, googleAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: googleAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
-                    var refreshToken = jwt.sign({ email }, googleAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: googleAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
+                    var token = jwt.sign({ email, id: upsertResult._id }, googleAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: googleAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
+                    var refreshToken = jwt.sign({ email, id: upsertResult._id }, googleAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: googleAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
                     // Store JWT in the session for 1 minute
-                    await conn.set(`refresh-token:${refreshToken}`, refreshToken, {ttl: 1000*60*8, keyspace: 'codehooks-auth'})
+                    //await conn.set(`refresh-token:${refreshToken}`, refreshToken, {ttl: 1000*60*8, keyspace: 'codehooks-auth'})
                     
                     if (googleAuth.settings.useCookie) {
                         res.setHeader('Set-Cookie', cookie.serialize('refresh-token', refreshToken, {
@@ -136,7 +136,14 @@ export const googleAuth: AuthStrategy = {
                             path: '/auth/refreshtoken',
                             secure: true,
                             httpOnly: true,
-                            maxAge: 60 * 60 * 8 // 8 hours                            
+                            maxAge: 60 * 60 * 24 * 8 // 8 days                            
+                        }));
+                        res.setHeader('Set-Cookie', cookie.serialize('access-token', token, {
+                            sameSite: "none",
+                            path: '/',
+                            secure: true,
+                            httpOnly: true,
+                            maxAge: 60 * 60 * 15 // 15 minutes                            
                         }));
                     }
                     if (googleAuth.settings.onAuthUser) {

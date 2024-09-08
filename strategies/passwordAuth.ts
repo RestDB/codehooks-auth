@@ -23,19 +23,22 @@ settings: null,
         const { username, password } = req.body;
         //console.log('login route', username, password)
         //console.log('Request', req)
-        var cookies = cookie.parse(req.headers.cookie || '');
-        console.log('Cookies', cookies)
+        let cookies = null;
+        if (req.headers.cookie) {
+            cookies = cookie.parse(req.headers.cookie);
+            //console.log('cookies', cookies)
+        }
 
         const db = await Datastore.open()
-        const aUser = await db.getOne('users', { username })
+        const aUser = await db.getOne('users', { email: username })
         const match = await checkPassword(password, aUser.password)
         console.log('aUser', aUser, match)
 
         if (match) {
-            const loginData = await db.updateOne('users', { username }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
+            const loginData = await db.updateOne('users', { email: username }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
             console.log(loginData)
-            var token = jwt.sign({ username }, passwordAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: passwordAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
-            var refreshToken = jwt.sign({ username }, passwordAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: passwordAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
+            var token = jwt.sign({ email: username, id: loginData._id }, passwordAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: passwordAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
+            var refreshToken = jwt.sign({ email: username, id: loginData._id }, passwordAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: passwordAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
             
             if (passwordAuth.settings.useCookie) {
                 res.setHeader('Set-Cookie', cookie.serialize('refresh-token', refreshToken, {
@@ -43,17 +46,25 @@ settings: null,
                     path: '/auth/refreshtoken',
                     secure: true,
                     httpOnly: true,
-                    maxAge: 60 * 60 * 8 // 8 hours                            
+                    maxAge: 60 * 60 * 24 * 8 // 8 days                            
+                }));
+                res.setHeader('Set-Cookie', cookie.serialize('access-token', token, {
+                    sameSite: "none",
+                    path: '/',
+                    secure: true,
+                    httpOnly: true,
+                    maxAge: 60 * 60 * 15 // 15 minutes                            
                 }));
             }
             console.log('PW redir', passwordAuth.settings.redirectSuccessUrl)
             if (passwordAuth.settings.onAuthUser) {
                 passwordAuth.settings.onAuthUser(req, res, {access_token: token, user: loginData, redirectURL: passwordAuth.settings.redirectSuccessUrl, method: "PASSWORD"})
             } else {
-                res.json({"access_token": token, redirectURL: passwordAuth.settings.redirectSuccessUrl,})
+                //res.json({"access_token": token, redirectURL: passwordAuth.settings.redirectSuccessUrl})
+                res.redirect(302, `${passwordAuth.settings.redirectSuccessUrl}#access_token=${token}`)
             }  
         } else {
-            const loginData = await db.updateOne('users', { username }, { $set: { lastFail: new Date().toISOString() }, $inc: { "fail": 1 } })
+            const loginData = await db.updateOne('users', { email: username }, { $set: { lastFail: new Date().toISOString() }, $inc: { "fail": 1 } })
             console.log(loginData)
             if (passwordAuth.settings.redirectFailUrl === '') {
                 res.status(401).json({ message: "Bummer, not valid user/pass", error: true })
@@ -62,7 +73,7 @@ settings: null,
             }
         }
     } catch (error: any) {
-        console.error('User does not exists?', error)
+        console.error('Username/pass login error:', error)
         if (passwordAuth.settings.redirectFailUrl === '') {
             res.status(401).json({ message: "Bummer, not a valid user/pass", error: true })
         } else {
@@ -114,6 +125,6 @@ export async function createUser(req: httpRequest, res: httpResponse) {
     const cryptPwd = await encryptPassword(password)
     console.log('Encrypt', cryptPwd)
     const db = await Datastore.open()
-    const newUser = await db.insertOne('users', { username, password: cryptPwd, created: new Date() })
+    const newUser = await db.updateOne('users', { email:username }, { $set: { email:username, password: cryptPwd, created: new Date() }}, {upsert: true})
     res.json({ ...newUser })
 }

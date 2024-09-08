@@ -16,9 +16,9 @@ let settings: AuthSettings = {
     userCollection: 'users', //database collection for users
     saltRounds: 10, // Number of salt rounds for hashing
     JWT_ACCESS_TOKEN_SECRET: process.env.JWT_ACCESS_TOKEN_SECRET || 'keep_locked_away',
-    JWT_ACCESS_TOKEN_SECRET_EXPIRE: '10m',
+    JWT_ACCESS_TOKEN_SECRET_EXPIRE: '15m',
     JWT_REFRESH_TOKEN_SECRET: process.env.JWT_REFRESH_TOKEN_SECRET || 'bury_in_the_sand',
-    JWT_REFRESH_TOKEN_SECRET_EXPIRE: '8h',
+    JWT_REFRESH_TOKEN_SECRET_EXPIRE: '8d',
     redirectSuccessUrl: '',
     redirectFailUrl: '',
     useCookie: true,
@@ -97,12 +97,16 @@ async function getJwtForAccessToken(req: httpRequest, res: httpResponse) {
 function verifyAccessToken(req: httpRequest, res: httpResponse, next: nextFunction) {    
     try {
         if (!req.headers.authorization) {
-            console.log('Missing auth header', req)
-            res.status(403).end('Missing auth header')
+            //console.log('Missing auth header', req)
+            //res.status(403).end('Missing auth header')
         }
         //const cookies = cookie.parse(req.headers.cookie);
         //console.log('Auth access-token', cookies['access-token'] ? cookies['access-token'] : 'no tok')
-        const token = getTokenFromAuthorizationHeader(req.headers['authorization'])
+        let token = getTokenFromAuthorizationHeader(req.headers['authorization'])
+        if (req.headers.cookie) {
+            const cookies = cookie.parse(req.headers.cookie);
+            token = cookies['access-token']
+        }
         if (token) {
             try {
                 const decoded = jwt.verify(token, settings.JWT_ACCESS_TOKEN_SECRET);

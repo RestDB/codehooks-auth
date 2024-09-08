@@ -64,22 +64,16 @@ The screenshot below shows the lock screen presented to the users.
 
 ![lock-screen](./examples/images/auth-lock-screen.png)
 
-If your app redirectSuccessUrl is `https://example.com/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://example.com/dashboard.html#access_token=xxx`.
+If your app redirectSuccessUrl is `https://example.com/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://example.com/dashboard.html#access_token=xxx`. However, a httpOnly cookie will also be set with the access_token. This makes it very simple to call your Codehooks.io API.
 
 Use the access_token to call your Codehooks.io API.
 
 ```javascript
 let accessToken = new URLSearchParams(window.location.hash.substr(1)).get('access_token');
-// if you get the access_token in the url hash, set it in local storage
-if (accessToken) {
-    localStorage.setItem('access_token', accessToken);
-} else {
-    // if not in url hash, get it from local storage
-    accessToken = localStorage.getItem('access_token');
-}
+// if you get the access_token in the url hash, keep it in memory state for if you dont want to use cookies.
+
 fetch('/api/person', {
   headers: {
-    'Authorization': `Bearer ${accessToken}`,
     'Content-Type': 'application/json'
   }
 });
@@ -109,7 +103,7 @@ Example output, first user has a google profile, the second user has a password:
   visits: 1
 }
 {
-  username: 'jane@example.com',
+  email: 'jane@example.com',
   password: '$2a$10$fs91FTvuJA.OS.xN2EYpHOturmWBVopp0sEdXsvd9c6q1QjxJhMki',
   created: '2024-09-07T10:16:16.056Z',
   _id: '66dc27f00c5913534a906e9f',
@@ -144,7 +138,7 @@ The `settings` object allows you to configure various aspects of the authenticat
 ### JWT_ACCESS_TOKEN_SECRET_EXPIRE
 - Type: `string`
 - Description: Expiration time for JWT access tokens.
-- Default: `'10m'`
+- Default: `'15m'`
 - Example: `'1h'`
 
 ### JWT_REFRESH_TOKEN_SECRET
@@ -156,7 +150,7 @@ The `settings` object allows you to configure various aspects of the authenticat
 ### JWT_REFRESH_TOKEN_SECRET_EXPIRE
 - Type: `string`
 - Description: Expiration time for JWT refresh tokens.
-- Default: `'8h'`
+- Default: `'8d'`
 - Example: `'24h'`
 
 ### redirectSuccessUrl

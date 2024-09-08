@@ -17,22 +17,21 @@ function passwordSignIn(event) {
         body: JSON.stringify(data)
     })
     .then(response => {
-        if (response.status > 201) {
+        if (!response.ok) {
             document.getElementById('error-message').style.display = 'block';
         } else {
             document.getElementById('error-message').style.display = 'none';                    
         }
-       
+        if (response.redirected) {
+            return window.location.href = response.url;
+        }
         return response.json();
     })
     .then(data => {
-        if (data.access_token) {
-            console.log('Status:', data);
-            localStorage.setItem('access_token', data.access_token);
-            window.location.href = data.redirectURL;
-            
+        if (data.error) {
+            console.error('Error login:', data);                        
         } else {
-            console.error('No access token from server')
+            console.log('Login data', data)
         }
     })
     .catch((error) => {
