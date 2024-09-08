@@ -5,12 +5,13 @@ import { passwordAuth } from './strategies/passwordAuth';
 import { googleAuth } from './strategies/googleAuth';
 import { app, Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
 
+// TODO: add github auth
 const strategies = {
     password: passwordAuth,
     google: googleAuth,
   };
 
-
+// Default settings
 let settings: AuthSettings = {
     userCollection: 'users', //database collection for users
     saltRounds: 10, // Number of salt rounds for hashing
@@ -24,7 +25,7 @@ let settings: AuthSettings = {
     baseAPIRoutes: '/'
 }
 
-
+// Initialize authentication for a Codehooks app
 export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callback?: (req:httpRequest, res:httpResponse, payload: any)=>void) {
     // merge settings
     settings = { ...settings, ...appSettings };
@@ -39,8 +40,6 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
     cohoApp.auth('/auth/login*', (req, res, next) => {
         next()
     })
-
-
     
     // route to get jwt from access token
     cohoApp.auth('/auth/accesstoken', (req, res, next) => {next()})   

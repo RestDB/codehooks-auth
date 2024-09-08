@@ -5,8 +5,10 @@ import * as cookie from 'cookie';
 import { google } from 'googleapis';
 import { AuthStrategy } from '../types';
 import { Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
-// ... (import other necessary modules)
 
+/**
+ * Google authentication strategy
+ */
 export const googleAuth: AuthStrategy = {
   settings: null,
   initialize: (cohoApp, settings) => {

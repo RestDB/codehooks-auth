@@ -2,10 +2,11 @@ import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import * as cookie from 'cookie';
 import { AuthStrategy } from '../types';
-//import { encryptPassword, checkPassword } from './utils';
 import { app, coho, Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
-// ... (import other necessary modules)
 
+/**
+ * Password authentication strategy
+ */
 export const passwordAuth: AuthStrategy = {
 settings: null,
   initialize: (cohoApp, settings) => {
@@ -74,7 +75,9 @@ settings: null,
 };
 
 
-// Function to encrypt a password
+/**
+ * Function to encrypt a password
+ */
 export async function encryptPassword(password: string) {
     try {
         const salt = await bcrypt.genSalt(passwordAuth.settings.saltRounds);
