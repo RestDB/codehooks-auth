@@ -43,7 +43,7 @@ const settings = {
   google: {
     CLIENT_ID: process.env.CLIENT_ID, // TODO: get this from google cloud console
     CLIENT_SECRET: process.env.CLIENT_SECRET, // TODO: get this from google cloud console
-    REDIRECT_URI: 'https://your-app.codehooks.io/auth/oauthcallback/google' // TODO: change this to your app url, add the callback url you set in google cloud console
+    REDIRECT_URI: 'https://{YOUR_APP_URL}.codehooks.io/auth/oauthcallback/google' // TODO: change this to your app url, add the callback url you set in google cloud console
   }
 }
 // setup auth settings
@@ -64,7 +64,7 @@ The screenshot below shows the lock screen presented to the users.
 
 ![lock-screen](./examples/images/auth-lock-screen.png)
 
-If your app redirectSuccessUrl is `/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://{YOUR_APP_URL}.codehooks.io/dashboard.html#access_token=xxx`.
+If your app redirectSuccessUrl is `https://example.com/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://example.com/dashboard.html#access_token=xxx`.
 
 Use the access_token to call your Codehooks.io API.
 
