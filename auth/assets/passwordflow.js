@@ -22,14 +22,7 @@ function passwordSignIn(event) {
         } else {
             document.getElementById('error-message').style.display = 'none';                    
         }
-        /*if (response.redirected) {
-            console.log("AC header", response.headers.get('Authorization'))
-            if (response.headers.has('Authorization')) {
-                window.location.href = `${response.url}#access_token=${response.headers.get('Authorization')}`;
-            } else {
-                window.location.href = `${response.url}#error=no_token`;
-            }            
-        }*/
+       
         return response.json();
     })
     .then(data => {
@@ -49,12 +42,6 @@ function passwordSignIn(event) {
 }
 
 // Execute the function when the page loads
-/*
-window.onload = function() {
-    console.log('Password form onload')
-    document.getElementById('login-form').addEventListener('submit', passwordSignIn);
-};
-*/
 document.addEventListener('DOMContentLoaded', function() {
     console.log("Password: DOM fully loaded and parsed");
     // Your event listener code here
