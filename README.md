@@ -3,13 +3,13 @@ Open source client authentication for Codehooks.io REST API backends.
 
 codehooks-auth is a library that provides easy-to-use authentication functionality for Codehooks.io REST API backends. It supports various authentication methods, including password-based authentication and OAuth (e.g., Google).
 
-Codehooks.io also has support for leading JWT based authentication providers like Auth0.com and Clerk.com. The codehooks-auth library aims to provide a simple and easy to use alternative for those who prefer not to use these providers or for those who need more control over the authentication process.
+Codehooks.io also has support for leading JWT based authentication providers like [Auth0.com](https://auth0.com) and [Clerk.com](https://clerk.com). The codehooks-auth library aims to provide a simple and easy to use alternative for those who prefer not to use these providers or for those who need more control over the authentication process.
 
 ## Features
 
 - Easy integration with Codehooks.io apps
 - Support for password-based authentication
-- OAuth support (e.g., Google)
+- OAuth support (e.g., Google and Github)
 - JWT-based access and refresh tokens
 - Customizable success and failure redirects
 - Static asset serving for auth-related pages
@@ -58,12 +58,13 @@ export default app.init()
 
 ## Client web app
 
-Client web apps can use `codehooks-auth` to login and signup. Add a route to the auth lock screen to the client web app `https://yourapp.codehooks.io/auth/assets/login.html`.
+Client web apps can use `codehooks-auth` to login and signup. To authenticate your users, direct them to the client web app route `https://{YOUR-APP}.codehooks.io/auth/assets/login.html`.
 
-The screenshot below shows the lock screen.
+The screenshot below shows the lock screen presented to the users.
+
 ![lock-screen](./examples/images/auth-lock-screen.png)
 
-If your app redirectSuccessUrl is `/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://yourapp.codehooks.io/dashboard.html#access_token=xxx`.
+If your app redirectSuccessUrl is `/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://{YOUR-APP-URL}.codehooks.io/dashboard.html#access_token=xxx`.
 
 Use the access_token to call your Codehooks.io API.
 
@@ -78,7 +79,8 @@ if (accessToken) {
 }
 fetch('/api/person', {
   headers: {
-    'Authorization': `Bearer ${accessToken}`
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
   }
 });
 ```
@@ -178,9 +180,32 @@ initAuth(app, settings, (req, res, payload) => {
 })
 ```
 
+## Refresh Token
+
+The refresh token is used to get a new access token when the current access token expires. The refresh token is stored in a httpOnly cookie.
+
+
+
 ## Deployment
 
 The easiest way to deploy your app with codehooks-auth is to use the `codehooks-cli` tool. This will deploy your code with the auth bindings and setup the environment variables for you.
+
+Call the `/auth/refresh` endpoint with the refresh token in the body to get a new access token.
+
+```javascript
+const response = await fetch('https://{YOUR-APP-URL}/auth/refreshtoken', {
+    method: 'POST',
+    headers: { 
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json' 
+    }
+});
+if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+}
+const result = await response.json()
+console.log('new access token', result.access_token);
+```
 
 ```bash
 codehooks deploy
