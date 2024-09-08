@@ -184,12 +184,6 @@ initAuth(app, settings, (req, res, payload) => {
 
 The refresh token is used to get a new access token when the current access token expires. The refresh token is stored in a httpOnly cookie.
 
-
-
-## Deployment
-
-The easiest way to deploy your app with codehooks-auth is to use the `codehooks-cli` tool. This will deploy your code with the auth bindings and setup the environment variables for you.
-
 Call the `/auth/refresh` endpoint with the refresh token in the body to get a new access token.
 
 ```javascript
@@ -206,6 +200,11 @@ if (!response.ok) {
 const result = await response.json()
 console.log('new access token', result.access_token);
 ```
+
+## Deployment
+
+The easiest way to deploy your app with codehooks-auth is to use the `codehooks-cli` tool. This will deploy your code with the auth bindings and setup the environment variables for you.
+
 
 ```bash
 codehooks deploy
