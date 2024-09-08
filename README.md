@@ -58,7 +58,7 @@ export default app.init()
 
 ## Client web app
 
-Client web apps can use `codehooks-auth` to login and signup. Add a route to the auth lock screen to the client web app `/auth/assets/login.html`.
+Client web apps can use `codehooks-auth` to login and signup. Add a route to the auth lock screen to the client web app `https://yourapp.codehooks.io/auth/assets/login.html`.
 
 The screenshot below shows the lock screen.
 ![lock-screen](./examples/images/auth-lock-screen.png)
@@ -68,7 +68,14 @@ If your app redirectSuccessUrl is `/dashboard.html` then after login you will be
 Use the access_token to call your Codehooks.io API.
 
 ```javascript
-const accessToken = new URLSearchParams(window.location.hash.substr(1)).get('access_token');
+let accessToken = new URLSearchParams(window.location.hash.substr(1)).get('access_token');
+// if you get the access_token in the url hash, set it in local storage
+if (accessToken) {
+    localStorage.setItem('access_token', accessToken);
+} else {
+    // if not in url hash, get it from local storage
+    accessToken = localStorage.getItem('access_token');
+}
 fetch('/api/person', {
   headers: {
     'Authorization': `Bearer ${accessToken}`
