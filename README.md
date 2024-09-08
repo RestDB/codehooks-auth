@@ -1,8 +1,19 @@
 # codehooks-auth
-Client authentication for Codehooks.io REST API backends. Codehooks.io has support for JWT based authentication out of the box with leading providers like Auth0.com and Clerk.com. This library aims to provide a simple and easy to use alternative for those who prefer not to use these providers or for those who need more control over the authentication process.
+Open source client authentication for Codehooks.io REST API backends. 
 
-## Overview
 codehooks-auth is a library that provides easy-to-use authentication functionality for Codehooks.io REST API backends. It supports various authentication methods, including password-based authentication and OAuth (e.g., Google).
+
+Codehooks.io also has support for leading JWT based authentication providers like Auth0.com and Clerk.com. The codehooks-auth library aims to provide a simple and easy to use alternative for those who prefer not to use these providers or for those who need more control over the authentication process.
+
+## Features
+
+- Easy integration with Codehooks.io apps
+- Support for password-based authentication
+- OAuth support (e.g., Google)
+- JWT-based access and refresh tokens
+- Customizable success and failure redirects
+- Static asset serving for auth-related pages
+- Configurable caching for static assets
 
 ## Installation
 To install codehooks-auth, use npm:
@@ -32,26 +43,38 @@ const settings = {
   google: {
     CLIENT_ID: process.env.CLIENT_ID, // TODO: get this from google cloud console
     CLIENT_SECRET: process.env.CLIENT_SECRET, // TODO: get this from google cloud console
-    REDIRECT_URI: 'https://trustworthy-summit-721c.codehooks.io/auth/oauthcallback/google' // TODO: change this to your app url
+    REDIRECT_URI: 'https://your-app.codehooks.io/auth/oauthcallback/google' // TODO: change this to your app url, add the callback url you set in google cloud console
   }
 }
 // setup auth settings
 initAuth(app, settings)
+
 // serve /auth/assets html forms javascripts etc
 app.static({ route: '/auth', directory: '/auth/assets', default: 'login.html' })
 
 // bind to serverless runtime
 export default app.init()
 ```
-## Features
 
-- Easy integration with Codehooks.io apps
-- Support for password-based authentication
-- OAuth support (e.g., Google)
-- JWT-based access and refresh tokens
-- Customizable success and failure redirects
-- Static asset serving for auth-related pages
-- Configurable caching for static assets
+## Client web app
+
+Client web apps can use `codehooks-auth` to login and signup. Add a route to the auth lock screen to the client web app `/auth/assets/login.html`.
+
+The screenshot below shows the lock screen.
+![lock-screen](./examples/images/auth-lock-screen.png)
+
+If your app redirectSuccessUrl is `/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://yourapp.codehooks.io/dashboard.html#access_token=xxx`.
+
+Use the access_token to call your Codehooks.io API.
+
+```javascript
+const accessToken = new URLSearchParams(window.location.hash.substr(1)).get('access_token');
+fetch('/api/person', {
+  headers: {
+    'Authorization': `Bearer ${accessToken}`
+  }
+});
+```
 
 ## Configuration
 
@@ -127,7 +150,7 @@ The `settings` object allows you to configure various aspects of the authenticat
   {
     CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-    REDIRECT_URI: 'https://your-app.codehooks.io/auth/oauthcallback/google'
+    REDIRECT_URI: 'https://{YOUR_APP_URL}/auth/oauthcallback/google'
   }
   ```
 ### github
