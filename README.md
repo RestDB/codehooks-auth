@@ -85,6 +85,41 @@ fetch('/api/person', {
 });
 ```
 
+## Manage your users
+
+You can manage your users with the codehooks-cli tool or the web ui. In this example we will use the cli tool to inspect the users collection.
+
+```bash
+codehooks query users --pretty
+```
+
+Example output, first user has a google profile, the second user has a password:
+
+```bash
+{
+  email: 'joe@example.com',
+  google_profile: {
+    id: '116063462675595629092',
+    email: 'joe@example.com',
+    verified_email: true,
+    picture: 'https://lh3.googleusercontent.com/a-/ALV-UjXBXzWzBflMe7jgUKXd1h41tT8KTmPRCv9Jq7wJO2j2EN4UAIU=s96-c',
+    hd: 'example.com'
+  },
+  _id: '66d75a487772ce9c01d30ae7',
+  visits: 1
+}
+{
+  username: 'jane@example.com',
+  password: '$2a$10$fs91FTvuJA.OS.xN2EYpHOturmWBVopp0sEdXsvd9c6q1QjxJhMki',
+  created: '2024-09-07T10:16:16.056Z',
+  _id: '66dc27f00c5913534a906e9f',
+  success: 8,
+  lastLogin: '2024-09-08T07:17:26.034Z',
+  fail: 3,
+  lastFail: '2024-09-08T07:17:22.473Z'
+}
+```
+
 ## Configuration
 
 The `settings` object allows you to configure various aspects of the authentication process:
