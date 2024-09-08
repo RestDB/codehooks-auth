@@ -64,7 +64,7 @@ The screenshot below shows the lock screen presented to the users.
 
 ![lock-screen](./examples/images/auth-lock-screen.png)
 
-If your app redirectSuccessUrl is `/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://{YOUR-APP-URL}.codehooks.io/dashboard.html#access_token=xxx`.
+If your app redirectSuccessUrl is `/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://{YOUR_APP_URL}.codehooks.io/dashboard.html#access_token=xxx`.
 
 Use the access_token to call your Codehooks.io API.
 
@@ -159,7 +159,7 @@ The `settings` object allows you to configure various aspects of the authenticat
   {
     CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-    REDIRECT_URI: 'https://{YOUR_APP_URL}/auth/oauthcallback/google'
+    REDIRECT_URI: 'https://{YOUR_APP_URL}.codehooks.io/auth/oauthcallback/google'
   }
   ```
 ### github
@@ -187,7 +187,7 @@ The refresh token is used to get a new access token when the current access toke
 Call the `/auth/refresh` endpoint with the refresh token in the body to get a new access token.
 
 ```javascript
-const response = await fetch('https://{YOUR-APP-URL}/auth/refreshtoken', {
+const response = await fetch('https://{YOUR_APP_URL}.codehooks.io/auth/refreshtoken', {
     method: 'POST',
     headers: { 
         'Authorization': `Bearer ${accessToken}`,
