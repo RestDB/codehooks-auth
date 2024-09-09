@@ -58,15 +58,15 @@ export default app.init()
 
 ## Client web app
 
-Client web apps can use `codehooks-auth` to login and signup. To authenticate your users, direct them to the client web app route `https://{YOUR-APP}.codehooks.io/auth/assets/login.html`.
+Client web apps can use the codehooks-auth package to login and signup. To authenticate your users, direct them to the client web app route `https://{YOUR-APP}.codehooks.io/auth/login.html`.
 
 The screenshot below shows the lock screen presented to the users.
 
 ![lock-screen](./examples/images/auth-lock-screen.png)
 
-If your app redirectSuccessUrl is `https://example.com/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://example.com/dashboard.html#access_token=xxx`. However, a httpOnly cookie will also be set with the access_token. This makes it very simple to call your Codehooks.io API.
+If your app `redirectSuccessUrl` is `https://example.com/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://example.com/dashboard.html#access_token=xxx`. However, a httpOnly cookie will also be set with the access_token and a refresh_token. This makes it very simple to call your Codehooks.io API.
 
-Use the access_token to call your Codehooks.io API.
+Call your Codehooks.io API with the implicit access_token in the url hash or the httpOnly cookie.
 
 ```javascript
 let accessToken = new URLSearchParams(window.location.hash.substr(1)).get('access_token');
@@ -83,7 +83,7 @@ fetch('/api/person', {
 
 You can manage your users with the codehooks-cli tool or the web ui. In this example we will use the cli tool to inspect the users collection.
 
-Let's first create a user with a password.
+Let's first create a user with a password. This example uses curl to create a user. Feel free to use any http client you like, [Postman](https://www.postman.com/), etc.
 
 ```bash
 curl --location 'https://{YOUR_APP}.codehooks.io/auth/createuser' \
@@ -95,9 +95,9 @@ curl --location 'https://{YOUR_APP}.codehooks.io/auth/createuser' \
 }'
 ```
 
-Now this user can login with the password.
+Now this user can login with the email and password.
 
-Next we will list the users to find the id of the user we just created.
+Let's go ahead and list the users to find the record of the user we just created.
 
 ```bash
 $coho query users --pretty
@@ -229,13 +229,12 @@ initAuth(app, settings, (req, res, payload) => {
 
 The refresh token is used to get a new access token when the current access token expires. The refresh token is stored in a httpOnly cookie.
 
-Call the `/auth/refresh` endpoint with the refresh token in the body to get a new access token.
+Call the `/auth/refresh` endpoint with the refresh token in the httpOnly cookie to get a new access token.
 
 ```javascript
 const response = await fetch('https://{YOUR_APP_URL}.codehooks.io/auth/refreshtoken', {
     method: 'POST',
     headers: { 
-        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json' 
     }
 });
