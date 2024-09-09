@@ -1,5 +1,5 @@
 # codehooks-auth
-Open source client authentication for Codehooks.io REST API backends. 
+Open source Client app authentication for Codehooks.io REST API backends. 
 
 codehooks-auth is a library that provides easy-to-use authentication functionality for Codehooks.io REST API backends. It supports various authentication methods, including password-based authentication and OAuth (e.g., Google).
 
