@@ -83,13 +83,39 @@ fetch('/api/person', {
 
 You can manage your users with the codehooks-cli tool or the web ui. In this example we will use the cli tool to inspect the users collection.
 
+Let's first create a user with a password.
+
 ```bash
-codehooks query users --pretty
+curl --location 'https://{YOUR_APP}.codehooks.io/auth/createuser' \
+--header 'x-apikey: {YOUR_API_KEY}' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "username": "jane@example.com",
+    "password": "MySecretPassword"
+}'
 ```
 
-Example output, first user has a google profile, the second user has a password:
+Now this user can login with the password.
+
+Next we will list the users to find the id of the user we just created.
 
 ```bash
+$coho query users --pretty
+```
+
+Example output, first user has a password, the second user has a google profile:
+
+```bash
+{
+  email: 'jane@example.com',
+  password: '$2a$10$fs91FTvuJA.OS.xN2EYpHOturmWBVopp0sEdXsvd9c6q1QjxJhMki',
+  created: '2024-09-07T10:16:16.056Z',
+  _id: '66dc27f00c5913534a906e9f',
+  success: 8,
+  lastLogin: '2024-09-08T07:17:26.034Z',
+  fail: 3,
+  lastFail: '2024-09-08T07:17:22.473Z'
+}
 {
   email: 'joe@example.com',
   google_profile: {
@@ -101,16 +127,6 @@ Example output, first user has a google profile, the second user has a password:
   },
   _id: '66d75a487772ce9c01d30ae7',
   visits: 1
-}
-{
-  email: 'jane@example.com',
-  password: '$2a$10$fs91FTvuJA.OS.xN2EYpHOturmWBVopp0sEdXsvd9c6q1QjxJhMki',
-  created: '2024-09-07T10:16:16.056Z',
-  _id: '66dc27f00c5913534a906e9f',
-  success: 8,
-  lastLogin: '2024-09-08T07:17:26.034Z',
-  fail: 3,
-  lastFail: '2024-09-08T07:17:22.473Z'
 }
 ```
 
@@ -236,7 +252,7 @@ The easiest way to deploy your app with codehooks-auth is to use the `codehooks-
 
 
 ```bash
-codehooks deploy
+$coho deploy
 ```
 
 

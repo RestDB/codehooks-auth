@@ -29,6 +29,7 @@ let settings: AuthSettings = {
 export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callback?: (req:httpRequest, res:httpResponse, payload: any)=>void) {
     // merge settings
     settings = { ...settings, ...appSettings };
+    console.log('Auth settings', settings)
     if (callback) {
         settings.onAuthUser = callback;
     }
@@ -55,24 +56,37 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
 // refresh access token
 async function refreshAccessToken(req:httpRequest, res: httpResponse) {
     try {
-        const cookies = cookie.parse(req.headers.cookie);
-        const token = cookies['refresh-token'];
+        let token = getTokenFromAuthorizationHeader(req.headers['authorization'])
+        if (req.headers.cookie) {
+            const cookies = cookie.parse(req.headers.cookie);
+            token = cookies['refresh-token']
+        }
+        if (!token) {
+            console.error('Missing refresh token', req.headers)
+            return res.status(401).json({error: "Missing refresh token"})
+        }
         console.log('Auth refresh-token', token)
         const decoded:any = jwt.verify(token, settings.JWT_REFRESH_TOKEN_SECRET);
         console.log('verified refresh token', decoded)
         const claims:any = {}
-        if (decoded.username) {
-            claims.username = decoded.username
-        } else if (decoded.email) {
+        if (decoded.email) {
             claims.email = decoded.email
+            claims.id = decoded.id
         }
         var access_token = jwt.sign(claims, settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE })
+        res.setHeader('Set-Cookie', cookie.serialize('access-token', access_token, {
+            sameSite: "none",
+            path: '/',
+            secure: true,
+            httpOnly: true,
+            maxAge: Math.floor((Date.now() + 15 * 60 * 1000 - Date.now()) / 1000) // 15 minutes from now
+        }));
         res.json({access_token})
     } catch (error:any) {
         if (error.name === "TokenExpiredError") {
             return res.status(401).json({token_error: "Token lifetime exceeded!"})               
         } 
-        console.error(error)
+        console.error('refreshAccessToken', error)
         res.status(401).json({error: error.message})
     }
 }

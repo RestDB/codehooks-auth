@@ -125,27 +125,32 @@ export const googleAuth: AuthStrategy = {
                     const acctokkey = crypto.randomBytes(32).toString('hex');
 
                     
-                    var token = jwt.sign({ email, id: upsertResult._id }, googleAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: googleAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
-                    var refreshToken = jwt.sign({ email, id: upsertResult._id }, googleAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: googleAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
+                    const token = jwt.sign({ email, id: upsertResult._id }, googleAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: googleAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
+                    const refreshToken = jwt.sign({ email, id: upsertResult._id }, googleAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: googleAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
+                    console.log('Google access token', googleAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE, token)
                     // Store JWT in the session for 1 minute
                     //await conn.set(`refresh-token:${refreshToken}`, refreshToken, {ttl: 1000*60*8, keyspace: 'codehooks-auth'})
                     
                     if (googleAuth.settings.useCookie) {
-                        res.setHeader('Set-Cookie', cookie.serialize('refresh-token', refreshToken, {
+                        const refreshTokenCookie = cookie.serialize('refresh-token', refreshToken, {
                             sameSite: "none",
                             path: '/auth/refreshtoken',
                             secure: true,
                             httpOnly: true,
-                            maxAge: 60 * 60 * 24 * 8 // 8 days                            
-                        }));
-                        res.setHeader('Set-Cookie', cookie.serialize('access-token', token, {
+                            maxAge: Math.floor((Date.now() + (8 * 24 * 60 * 60 * 1000) - Date.now()) / 1000) // 8 days
+                        });
+
+                        const accessTokenCookie = cookie.serialize('access-token', token, {
                             sameSite: "none",
                             path: '/',
                             secure: true,
                             httpOnly: true,
-                            maxAge: 60 * 60 * 15 // 15 minutes                            
-                        }));
+                            maxAge: Math.floor((Date.now() + (15 * 60 * 1000) - Date.now()) / 1000) // 15 minutes from now
+                        });
+
+                        res.setHeader('Set-Cookie', [refreshTokenCookie, accessTokenCookie]);
                     }
+                    console.log('Google cookies', res.headers)
                     if (googleAuth.settings.onAuthUser) {
                         googleAuth.settings.onAuthUser(req, res, {access_token: token, user: upsertResult, method: "GOOGLE"})
                     } else {
