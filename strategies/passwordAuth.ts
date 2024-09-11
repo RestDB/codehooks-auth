@@ -1,6 +1,7 @@
 import * as bcrypt from 'bcryptjs';
-import * as jwt from 'jsonwebtoken';
-import * as cookie from 'cookie';
+import jwt from 'jsonwebtoken';
+import cookie from 'cookie';
+import ms from 'ms';
 import { AuthStrategy } from '../types';
 import { app, coho, Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
 
@@ -46,7 +47,7 @@ settings: null,
                     path: '/auth/refreshtoken',
                     secure: true,
                     httpOnly: true,
-                    maxAge: Math.floor((Date.now() + (8 * 24 * 60 * 60 * 1000) - Date.now()) / 1000) // 8 days
+                    maxAge: Number(ms(passwordAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE)) / 1000 // 8 days
                 });
 
                 const accessTokenCookie = cookie.serialize('access-token', token, {
@@ -54,7 +55,7 @@ settings: null,
                     path: '/',
                     secure: true,
                     httpOnly: true,
-                    maxAge: Math.floor((Date.now() + (15 * 60 * 1000) - Date.now()) / 1000) // 15 minutes from now
+                    maxAge: Number(ms(passwordAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE)) / 1000 // 15 minutes from now
                 });
 
                 res.setHeader('Set-Cookie', [refreshTokenCookie, accessTokenCookie]);

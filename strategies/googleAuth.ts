@@ -2,6 +2,7 @@ import * as crypto from "node:crypto";
 import fetch from 'node-fetch';
 import * as jwt from 'jsonwebtoken';
 import * as cookie from 'cookie';
+import ms from 'ms';
 import { google } from 'googleapis';
 import { AuthStrategy } from '../types';
 import { Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
@@ -24,7 +25,7 @@ export const googleAuth: AuthStrategy = {
         ]
     }
     // allow public access to oauth callback
-    cohoApp.auth('/auth/oauthcallback/*', (req, res, next) => {
+    cohoApp.auth('/auth/oauthcallback/google', (req, res, next) => {
         next()
     })
     // custom route to google auth screen
@@ -137,7 +138,7 @@ export const googleAuth: AuthStrategy = {
                             path: '/auth/refreshtoken',
                             secure: true,
                             httpOnly: true,
-                            maxAge: Math.floor((Date.now() + (8 * 24 * 60 * 60 * 1000) - Date.now()) / 1000) // 8 days
+                            maxAge: Number(ms(googleAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE)) / 1000 // 8 days
                         });
 
                         const accessTokenCookie = cookie.serialize('access-token', token, {
@@ -145,7 +146,7 @@ export const googleAuth: AuthStrategy = {
                             path: '/',
                             secure: true,
                             httpOnly: true,
-                            maxAge: Math.floor((Date.now() + (15 * 60 * 1000) - Date.now()) / 1000) // 15 minutes from now
+                            maxAge: Number(ms(googleAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE)) / 1000 // 15 minutes from now
                         });
 
                         res.setHeader('Set-Cookie', [refreshTokenCookie, accessTokenCookie]);

@@ -1,14 +1,17 @@
 import * as jwt from 'jsonwebtoken';
 import * as cookie from 'cookie';
+import ms from 'ms';
 import { AuthSettings } from './types';
 import { passwordAuth } from './strategies/passwordAuth';
 import { googleAuth } from './strategies/googleAuth';
+import { githubAuth } from './strategies/githubAuth';
 import { app, Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
 
 // TODO: add github auth
 const strategies = {
     password: passwordAuth,
     google: googleAuth,
+    github: githubAuth 
   };
 
 // Default settings
@@ -29,7 +32,7 @@ let settings: AuthSettings = {
 export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callback?: (req:httpRequest, res:httpResponse, payload: any)=>void) {
     // merge settings
     settings = { ...settings, ...appSettings };
-    console.log('Auth settings', settings)
+    
     if (callback) {
         settings.onAuthUser = callback;
     }
@@ -79,7 +82,7 @@ async function refreshAccessToken(req:httpRequest, res: httpResponse) {
             path: '/',
             secure: true,
             httpOnly: true,
-            maxAge: Math.floor((Date.now() + 15 * 60 * 1000 - Date.now()) / 1000) // 15 minutes from now
+            maxAge: Number(ms(settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE)) / 1000 // 15 minutes from now
         }));
         res.json({access_token})
     } catch (error:any) {
