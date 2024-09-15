@@ -15,7 +15,7 @@ Codehooks.io also has support for leading JWT based authentication providers lik
 - Static asset serving for auth-related pages
 - Configurable caching for static assets
 
-Check out the [live demo exmaple](https://trustworthy-summit-721c.codehooks.io/index.html).
+Check out the [live demo example](https://trustworthy-summit-721c.codehooks.io/index.html).
 
 ## Installation
 To install codehooks-auth, use npm:
