@@ -5,7 +5,7 @@ import { AuthSettings } from './types';
 import { passwordAuth } from './strategies/passwordAuth';
 import { googleAuth } from './strategies/googleAuth';
 import { githubAuth } from './strategies/githubAuth';
-import { app, Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
+import { app, Datastore, httpRequest, httpResponse, nextFunction, filestore } from 'codehooks-js';
 
 // TODO: add github auth
 const strategies = {
@@ -41,7 +41,7 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
     Object.values(strategies).forEach(strategy => strategy.initialize(cohoApp, settings));
     
     // allow public access to login api
-    cohoApp.auth('/auth/login*', (req, res, next) => {
+    cohoApp.auth('/auth/*', (req, res, next) => {
         next()
     })
     
@@ -53,8 +53,23 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
     cohoApp.post('/auth/refreshtoken', refreshAccessToken)
     // protect this API with a JWT
     cohoApp.auth(`${settings.baseAPIRoutes}/*`, verifyAccessToken)
+    // serve lock screens
+    
+    cohoApp.use('/auth/login', (req: httpRequest, res: httpResponse, next: nextFunction) =>{
+        req.apiPath = '/auth/login.html'
+        next()
+    })
+    cohoApp.use('/auth/signup', (req: httpRequest, res: httpResponse, next: nextFunction) =>{
+        req.apiPath = '/auth/signup.html'
+        next()
+    })
+    cohoApp.use('/auth/forgot', (req: httpRequest, res: httpResponse, next: nextFunction) =>{
+        req.apiPath = '/auth/forgot.html'
+        next()
+    })
     return 'OK'
 }
+
 
 // refresh access token
 async function refreshAccessToken(req:httpRequest, res: httpResponse) {
