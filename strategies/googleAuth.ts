@@ -14,6 +14,10 @@ export const googleAuth: AuthStrategy = {
   settings: null,
   initialize: (cohoApp, settings) => {
     // Initialize Google-specific settings
+    if (!settings.google) {
+        console.error('Google settings are required')
+        return
+    }
     googleAuth.settings = settings;
     // set default URI and scope
     if (!settings.google.REDIRECT_URI) {

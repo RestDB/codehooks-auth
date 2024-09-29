@@ -23,7 +23,7 @@ settings: null,
     try {
         const { username, password } = req.body;
         //console.log('login route', username, password)
-        //console.log('Request', req)
+        console.debug('Login Request', req)
         let cookies = null;
         if (req.headers.cookie) {
             cookies = cookie.parse(req.headers.cookie);
@@ -61,11 +61,12 @@ settings: null,
                 res.setHeader('Set-Cookie', [refreshTokenCookie, accessTokenCookie]);
             }
             console.log('PW redir', passwordAuth.settings.redirectSuccessUrl)
-            console.log('PW cookies', res.headers)
+            
             if (passwordAuth.settings.onAuthUser) {
                 passwordAuth.settings.onAuthUser(req, res, {access_token: token, user: loginData, redirectURL: passwordAuth.settings.redirectSuccessUrl, method: "PASSWORD"})
             } else {
                 //res.json({"access_token": token, redirectURL: passwordAuth.settings.redirectSuccessUrl})
+                console.debug('Redirecting to', `${passwordAuth.settings.redirectSuccessUrl}#access_token=${token}`)
                 res.redirect(302, `${passwordAuth.settings.redirectSuccessUrl}#access_token=${token}`)
             }  
         } else {

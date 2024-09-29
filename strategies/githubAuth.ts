@@ -13,6 +13,10 @@ export const githubAuth: AuthStrategy = {
   settings: null,
   initialize: (cohoApp, settings) => {
     // Initialize GitHub-specific settings
+    if (!settings.github) {
+      console.error('GitHub settings are required')
+      return
+  }
     githubAuth.settings = settings;
     // set default URI and scope
     if (!settings.github.REDIRECT_URI) {
