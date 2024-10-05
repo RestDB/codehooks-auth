@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc --declaration  --outDir dist",
-    "postinstall": "node -e \"if(process.env.INIT_CWD !== process.cwd()) require('child_process').execSync('cp -r auth $INIT_CWD', {stdio: 'inherit'})\""
+    "postinstall": "node -e \"if(process.env.INIT_CWD !== process.cwd()) require('child_process').execSync('cp -r auth $INIT_CWD', {stdio: 'inherit'})\"",
+     "test": "echo no tests yet"
   },
   "author": "jones@restdb.io",
   "license": "ISC",
