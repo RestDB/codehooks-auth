@@ -1,18 +1,18 @@
 {
   "name": "codehooks-auth",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Codehooks auth lib",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc --declaration  --outDir dist",
-    "postinstall": "cp -r auth $INIT_CWD"
+    "postinstall": "node -e \"if(process.env.INIT_CWD !== process.cwd()) require('child_process').execSync('cp -r auth $INIT_CWD', {stdio: 'inherit'})\""
   },
   "author": "jones@restdb.io",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "codehooks-js": "latest",
+    "codehooks-js": "^1.2.18",
     "cookie": "^0.6.0",
     "googleapis": "^143.0.0",
     "jsonwebtoken": "^9.0.2",
@@ -26,5 +26,17 @@
     "@types/ms": "^0.7.34",
     "@types/node": "^22.5.0",
     "typescript": "^5.5.4"
-  }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RestDB/codehooks-auth.git"
+  },
+  "files": [
+    "dist",
+    "auth",
+    "README.md"
+  ]
 }

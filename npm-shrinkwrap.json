@@ -1,17 +1,17 @@
 {
   "name": "codehooks-auth",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "codehooks-auth",
-      "version": "1.0.0",
+      "version": "0.0.1",
       "hasInstallScript": true,
       "license": "ISC",
       "dependencies": {
         "bcryptjs": "^2.4.3",
-        "codehooks-js": "latest",
+        "codehooks-js": "^1.2.18",
         "cookie": "^0.6.0",
         "googleapis": "^143.0.0",
         "jsonwebtoken": "^9.0.2",
@@ -130,9 +130,9 @@
       }
     },
     "node_modules/codehooks-js": {
-      "version": "1.2.15",
-      "resolved": "https://registry.npmjs.org/codehooks-js/-/codehooks-js-1.2.15.tgz",
-      "integrity": "sha512-9MVl+fwi4cJy/LTZvGGkyICjq8w9E47vguPArmC5ZRU2/wZFbmqgZjEi9XmUJsgo9oVxTe6RHtk4tRRvjhBpRQ==",
+      "version": "1.2.18",
+      "resolved": "https://registry.npmjs.org/codehooks-js/-/codehooks-js-1.2.18.tgz",
+      "integrity": "sha512-RAZh7KCWB0loYazCN6PxN7FxSV5+NKRfjP47df+TtOZa+4PoPQald3EZoOuiyoqD+l2dMtRyZUEL3cculluwNQ==",
       "dependencies": {
         "cron-parser": "^4.7.1",
         "lodash": "^4.17.21",
