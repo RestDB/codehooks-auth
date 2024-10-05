@@ -7,14 +7,14 @@
   "scripts": {
     "build": "tsc --declaration  --outDir dist",
     "postinstall": "node -e \"if(process.env.INIT_CWD !== process.cwd()) require('child_process').execSync('cp -r auth $INIT_CWD', {stdio: 'inherit'})\"",
-     "test": "echo no tests yet"
+    "test": "echo no tests yet"
   },
   "author": "jones@restdb.io",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "codehooks-js": "^1.2.18",
-    "cookie": "^0.6.0",
+    "cookie": "^0.7.1",
     "googleapis": "^143.0.0",
     "jsonwebtoken": "^9.0.2",
     "ms": "^2.1.3",
