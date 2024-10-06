@@ -152,7 +152,7 @@ function verifyAccessToken(req: httpRequest, res: httpResponse, next: nextFuncti
         if (token) {
             try {
                 const decoded = jwt.verify(token, settings.JWT_ACCESS_TOKEN_SECRET);
-                console.log('verified access token', decoded, req.headers.cookie)
+                console.debug('verified access token', decoded, req.headers.cookie)
                 next()
             } catch (error:any) {
                 if (error.name === "TokenExpiredError") {
