@@ -232,7 +232,7 @@ The `settings` object allows you to configure various aspects of the authenticat
   }
   ```
 
-## Authentication Callback
+## Optional: Overriding the flow with an authentication callback
 
 The `initAuth` function takes a callback as its third argument. This callback is called after successful authentication and allows you to customize the response:
 
