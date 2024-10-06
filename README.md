@@ -28,6 +28,17 @@ npm install codehooks-auth codehooks-js
 
 The install script will create a folder `/auth/assets` with the login/signup pages and the javascript to drive them. Feel free to modify these to your liking.
 
+After the install, your project should have a `auth` folder structure like this:
+
+```
+auth
+└── assets
+    ├── forgot.html
+    ├── login.html
+    ├── passwordflow.js
+    └── signup.html
+```
+
 ## Usage
 
 Here's a complete example of how to use codehooks-auth in your Codehooks.io app:
