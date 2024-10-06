@@ -256,6 +256,7 @@ Call the `/auth/refresh` endpoint with the refresh token in the httpOnly cookie 
 ```javascript
 const response = await fetch('https://{YOUR_APP_URL}.codehooks.io/auth/refreshtoken', {
     method: 'POST',
+    credentials: "include",
     headers: { 
         'Content-Type': 'application/json' 
     }
