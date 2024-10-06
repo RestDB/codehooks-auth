@@ -21,7 +21,7 @@ Check out the [live demo example](https://trustworthy-summit-721c.codehooks.io/i
 To install codehooks-auth, use npm:
 
 ```bash
-npm install codehooks-auth
+npm install codehooks-auth codehooks-js
 ```
 
 The install script will create a folder `/auth/assets` with the login/signup pages and the javascript to drive them. Feel free to modify these to your liking.
@@ -46,6 +46,11 @@ const settings = {
     CLIENT_ID: process.env.CLIENT_ID, // TODO: get this from google cloud console
     CLIENT_SECRET: process.env.CLIENT_SECRET, // TODO: get this from google cloud console
     REDIRECT_URI: 'https://{YOUR_APP_URL}.codehooks.io/auth/oauthcallback/google' // TODO: change this to your app url, add the callback url you set in google cloud console
+  },
+  github: {
+    CLIENT_ID: process.env.GITHUB_CLIENT_ID, // TODO: get this from github
+    CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET, // TODO: get this from github
+    REDIRECT_URI: 'https://{YOUR_APP_URL}.codehooks.io/auth/oauthcallback/github' // TODO: change this to your app url, add the callback url you set in github
   }
 }
 // setup auth settings
@@ -71,10 +76,8 @@ If your app `redirectSuccessUrl` is `https://example.com/dashboard.html` then af
 Call your Codehooks.io API with the implicit access_token in the url hash or the httpOnly cookie.
 
 ```javascript
-let accessToken = new URLSearchParams(window.location.hash.substr(1)).get('access_token');
-// if you get the access_token in the url hash, keep it in memory state for if you dont want to use cookies.
-
 fetch('/api/person', {
+  credentials: "include",
   headers: {
     'Content-Type': 'application/json'
   }
@@ -95,6 +98,10 @@ curl --location 'https://{YOUR_APP}.codehooks.io/auth/createuser' \
     "username": "jane@example.com",
     "password": "MySecretPassword"
 }'
+```
+Tip: use openssl to generate a random password for the user.
+```bash
+openssl rand -base64 32
 ```
 
 Now this user can login with the email and password.
@@ -253,7 +260,7 @@ The easiest way to deploy your app with codehooks-auth is to use the `codehooks-
 
 
 ```bash
-$coho deploy
+coho deploy
 ```
 
 
