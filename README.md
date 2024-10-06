@@ -76,6 +76,15 @@ app.static({ route: '/auth', directory: '/auth/assets', default: 'login.html' })
 export default app.init()
 ```
 
+## Deployment of the server side code
+
+The easiest way to deploy your app with codehooks-auth is to use the `codehooks-cli` tool. This will deploy your code with the auth bindings and setup the environment variables for you.
+
+
+```bash
+coho deploy
+```
+
 ## Client web app
 
 Client web apps can use the codehooks-auth package to login and signup. To authenticate your users, direct them to the client web app route `https://{YOUR-APP}.codehooks.io/auth/login.html`.
@@ -283,15 +292,6 @@ if (!response.ok) {
 }
 const result = await response.json()
 console.log('new access token', result.access_token);
-```
-
-## Deployment
-
-The easiest way to deploy your app with codehooks-auth is to use the `codehooks-cli` tool. This will deploy your code with the auth bindings and setup the environment variables for you.
-
-
-```bash
-coho deploy
 ```
 
 
