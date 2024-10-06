@@ -109,7 +109,7 @@ Now this user can login with the email and password.
 Let's go ahead and list the users to find the record of the user we just created.
 
 ```bash
-$coho query users --pretty
+coho query users --pretty
 ```
 
 Example output, first user has a password, the second user has a google profile:
@@ -217,7 +217,20 @@ The `settings` object allows you to configure various aspects of the authenticat
   }
   ```
 ### github
-In progress ...
+- Type: `object`
+- Description: Configuration for GitHub OAuth.
+- Properties:
+  - `CLIENT_ID`: GitHub OAuth client ID.
+  - `CLIENT_SECRET`: GitHub OAuth client secret.
+  - `REDIRECT_URI`: Redirect URI for GitHub OAuth callback.
+- Example:
+  ```javascript
+  {
+    CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+    CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+    REDIRECT_URI: 'https://{YOUR_APP_URL}.codehooks.io/auth/oauthcallback/github'
+  }
+  ```
 
 ## Authentication Callback
 
