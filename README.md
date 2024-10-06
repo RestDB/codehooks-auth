@@ -73,7 +73,7 @@ The screenshot below shows the lock screen presented to the users.
 
 ![lock-screen](./examples/images/auth-lock-screen.png)
 
-If your app `redirectSuccessUrl` is `https://example.com/dashboard.html` then after login you will be redirected to this with an JWT accesstoken parameter in the url `https://example.com/dashboard.html#access_token=xxx`. However, a httpOnly cookie will also be set with the access_token and a refresh_token. This makes it very simple to call your Codehooks.io API.
+If your app `redirectSuccessUrl` is `https://example.com/dashboard.html` then after login you will be redirected to this URL. And, a httpOnly cookie will be set with the access_token and a refresh_token. This makes it very simple to call your Codehooks.io API.
 
 Call your Codehooks.io API with the implicit access_token in the url hash or the httpOnly cookie.
 
@@ -85,6 +85,8 @@ fetch('/api/person', {
   }
 });
 ```
+
+_ToDo: Provide a complete client side JavaScript that handles access token, and refresh token when the access token expires._
 
 ## Manage your users
 
@@ -101,7 +103,9 @@ curl --location 'https://{YOUR_APP}.codehooks.io/auth/createuser' \
     "password": "MySecretPassword"
 }'
 ```
+
 Tip: use openssl to generate a random password for the user.
+
 ```bash
 openssl rand -base64 32
 ```
@@ -114,7 +118,7 @@ Let's go ahead and list the users to find the record of the user we just created
 coho query users --pretty
 ```
 
-Example output, first user has a password, the second user has a google profile:
+Example output, first user has a password, the second user has a google profile. Note the success and fail counts for each user.
 
 ```bash
 {
