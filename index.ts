@@ -93,9 +93,9 @@ async function refreshAccessToken(req:httpRequest, res: httpResponse) {
             console.error('Missing refresh token', req.headers)
             return res.status(401).json({error: "Missing refresh token"})
         }
-        console.log('Auth refresh-token', token)
+        //console.log('Auth refresh-token', token)
         const decoded:any = jwt.verify(token, settings.JWT_REFRESH_TOKEN_SECRET);
-        console.log('verified refresh token', decoded)
+        //console.log('verified refresh token', decoded)
         const claims:any = {}
         if (decoded.email) {
             claims.email = decoded.email
