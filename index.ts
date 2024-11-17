@@ -5,13 +5,15 @@ import { AuthSettings } from './types';
 import { passwordAuth } from './strategies/passwordAuth';
 import { googleAuth } from './strategies/googleAuth';
 import { githubAuth } from './strategies/githubAuth';
+import { otpAuth } from './strategies/otpAuth';
 import { app, Datastore, httpRequest, httpResponse, nextFunction, filestore } from 'codehooks-js';
 
 // TODO: add github auth
 const strategies = {
     password: passwordAuth,
     google: googleAuth,
-    github: githubAuth 
+    github: githubAuth,
+    otp: otpAuth
   };
 
 // Default settings
@@ -22,8 +24,8 @@ let settings: AuthSettings = {
     JWT_ACCESS_TOKEN_SECRET_EXPIRE: '15m',
     JWT_REFRESH_TOKEN_SECRET: process.env.JWT_REFRESH_TOKEN_SECRET || 'bury_in_the_sand',
     JWT_REFRESH_TOKEN_SECRET_EXPIRE: '8d',
-    redirectSuccessUrl: '',
-    redirectFailUrl: '',
+    redirectSuccessUrl: '/',
+    redirectFailUrl: '/',
     useCookie: true,
     baseAPIRoutes: '/'
 }
@@ -70,6 +72,10 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
         })
         cohoApp.use('/auth/forgot', (req: httpRequest, res: httpResponse, next: nextFunction) =>{
             req.apiPath = '/auth/forgot.html'
+            next()
+        })
+        cohoApp.use('/auth/otp', (req: httpRequest, res: httpResponse, next: nextFunction) =>{
+            req.apiPath = '/auth/otp.html'
             next()
         })
         
@@ -136,7 +142,7 @@ async function getJwtForAccessToken(req: httpRequest, res: httpResponse) {
 }
 
 // auth middleware
-function verifyAccessToken(req: httpRequest, res: httpResponse, next: nextFunction) {    
+function verifyAccessToken(req: any, res: any, next: nextFunction) {    
     try {
         if (!req.headers.authorization) {
             //console.log('Missing auth header', req)
@@ -152,7 +158,8 @@ function verifyAccessToken(req: httpRequest, res: httpResponse, next: nextFuncti
         if (token) {
             try {
                 const decoded = jwt.verify(token, settings.JWT_ACCESS_TOKEN_SECRET);
-                //console.debug('verified access token', decoded, req.headers.cookie)
+                req.headers['x-jwt-decoded'] = decoded;
+                console.debug('verified access token', req.headers['x-jwt-decoded'])
                 next()
             } catch (error:any) {
                 if (error.name === "TokenExpiredError") {

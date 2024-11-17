@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Forgot Username/Password</title>
+    <title>One Time Password</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
@@ -23,14 +23,18 @@
         </div>
 
         <!-- Title Below the Logo -->
-        <h2 class="text-center text-2xl font-bold text-gray-700 mb-6">Forgot Username/Password</h2>
+        <h2 class="text-center text-2xl font-bold text-gray-700 mb-6">One Time Password</h2>
 
         <!-- Forgot Username/Password Form -->
-        <form id="forgot-form" class="space-y-6">
+        <form id="otp-form" class="space-y-6">
+            <!-- Hidden Error Message -->
+      <div id="error-message" class="hidden mb-4 p-2 bg-red-100 text-red-700 rounded-md">
+                <p>Error: Invalid OTP. Please try again.</p>
+            </div>
             <!-- Email Input -->
             <div>
-                <label for="email" class="block text-sm font-medium text-gray-700">Enter your email</label>
-                <input type="email" id="email" name="email" required placeholder="name@example.com"
+                <label for="otp" class="block text-sm font-medium text-gray-700">Enter your password</label>
+                <input type="text" id="otp" name="otp" required placeholder="123456"
                     class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
             </div>
 
@@ -45,13 +49,12 @@
             <!-- Sign In Link -->
             <div class="mt-6 text-center">
                 <p class="text-sm text-gray-600">
-                    Remembered your account?
-                    <a href="login" class="text-indigo-600 hover:text-indigo-500 font-medium">Sign in</a>
+                    <a href="login" class="text-indigo-600 hover:text-indigo-500 font-medium">Back to login</a>
                 </p>
             </div>
-
         </form>
     </div>
+    <script src="otp.js"></script>
 </body>
 
 </html>

@@ -127,6 +127,7 @@ export const githubAuth: AuthStrategy = {
       if (githubAuth.settings.onAuthUser) {
         githubAuth.settings.onAuthUser(req, res, {access_token: token, user: upsertResult, method: "GITHUB"})
       } else {
+        console.debug('Github Redirecting to', `${githubAuth.settings.redirectSuccessUrl}#access_token=${token}`)
         res.redirect(302, `${githubAuth.settings.redirectSuccessUrl}#access_token=${token}`)
       }
     } else {

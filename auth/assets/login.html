@@ -8,7 +8,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-gray-100 flex items-start md:items-center justify-center h-screen">
+<body class="bg-gray-900 flex items-start md:items-center justify-center h-screen">
 
   <div class="w-full max-w-sm mx-auto bg-white shadow-lg rounded-lg p-8 mt-8 md:mt-0">
 
@@ -34,7 +34,7 @@
     <form id="login-form" class="space-y-6">
       <!-- Hidden Error Message -->
       <div id="error-message" class="hidden mb-4 p-2 bg-red-100 text-red-700 rounded-md">
-        <p>Error: Invalid username or password. Please try again.</p>
+        <p>Error: Invalid username. Please try again.</p>
       </div>
 
       <!-- Username Input -->
@@ -44,15 +44,9 @@
           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
       </div>
 
-      <!-- Password Input -->
-      <div>
-        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-        <input type="password" id="password" name="password" required
-          class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-      </div>
       <!-- Forgot link -->
       <p class="text-sm text-gray-600">
-        <a href="forgot" class="text-indigo-600 hover:text-indigo-500 font-medium">Forgot password</a>
+        <a href="otp" class="text-indigo-600 hover:text-indigo-500 font-medium">One time password</a>
       </p>
 
       <!-- Login Button -->
@@ -120,7 +114,7 @@
 
     </form>
   </div>
-  <script src="passwordflow.js"></script>
+  <script src="signin.js"></script>
 </body>
 
 </html>
