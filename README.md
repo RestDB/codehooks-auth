@@ -120,9 +120,9 @@ _ToDo: Provide a complete client side JavaScript that handles access token, and 
 
 ## Manage your users
 
-You can manage your users with the codehooks-cli tool or the web ui. In this example we will use the cli tool to inspect the users collection.
+You can manage your users with the codehooks-cli tool or the web ui. 
 
-The easiest way to get started is to add a user with the Studio app as show below.
+The easiest way to get started is to add a user with the Studio app as shown in the screenshot below.
 
 ![add-user](./examples/images/users.png)
 
