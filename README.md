@@ -10,7 +10,7 @@ However, the codehooks-auth library aims to provide a simple and easy to use alt
 ## Features
 
 - Easy integration with Codehooks.io apps
-- Support for password-based authentication
+- Support for one time password authentication
 - OAuth support (Google and Github)
 - JWT-based access and refresh tokens
 - Customizable success and failure redirects
@@ -64,6 +64,12 @@ const settings = {
     CLIENT_ID: process.env.GITHUB_CLIENT_ID, // TODO: get this from github
     CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET, // TODO: get this from github
     REDIRECT_URI: 'https://{YOUR_APP_URL}.codehooks.io/auth/oauthcallback/github' // TODO: change this to your app url, add the callback url you set in github
+  },
+  email: {
+    MAILGUN_APIKEY: process.env.MAILGUN_APIKEY, // TODO: get this from mailgun
+    MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN, // TODO: get this from mailgun
+    MAILGUN_FROM_EMAIL: process.env.MAILGUN_FROM_EMAIL, // TODO: set this to your email
+    MAILGUN_FROM_NAME: process.env.MAILGUN_FROM_NAME // TODO: set this to your name
   }
 }
 // setup auth settings
@@ -92,6 +98,10 @@ Client web apps can use the codehooks-auth package to login and signup. To authe
 The screenshot below shows the lock screen presented to the users.
 
 ![lock-screen](./examples/images/auth-lock-screen.png)
+
+The screenshot below shows the one time password screen presented to the users.
+
+![lock-screen](./examples/images/otp-screen.png)
 
 If your app `redirectSuccessUrl` is `https://example.com/dashboard.html` then after login you will be redirected to this URL. And, a httpOnly cookie will be set with the access_token and a refresh_token. This makes it very simple to call your Codehooks.io API.
 
@@ -255,6 +265,24 @@ The `settings` object allows you to configure various aspects of the authenticat
     CLIENT_ID: process.env.GITHUB_CLIENT_ID,
     CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
     REDIRECT_URI: 'https://{YOUR_APP_URL}.codehooks.io/auth/oauthcallback/github'
+  }
+  ```
+
+### email
+- Type: `object`
+- Description: Configuration for email sending. 
+- Properties:
+  - `MAILGUN_APIKEY`: Mailgun API key.
+  - `MAILGUN_DOMAIN`: Mailgun domain.
+  - `MAILGUN_FROM_EMAIL`: Email address to send from.
+  - `MAILGUN_FROM_NAME`: Name to send from. 
+- Example:
+  ```javascript
+  {
+    MAILGUN_APIKEY: process.env.MAILGUN_APIKEY,
+    MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN,
+    MAILGUN_FROM_EMAIL: 'jane@example.com',
+    MAILGUN_FROM_NAME: 'Jane Doe'
   }
   ```
 
