@@ -122,58 +122,9 @@ _ToDo: Provide a complete client side JavaScript that handles access token, and 
 
 You can manage your users with the codehooks-cli tool or the web ui. In this example we will use the cli tool to inspect the users collection.
 
-Let's first create a user with a password. This example uses curl to create a user. Feel free to use any http client you like, [Postman](https://www.postman.com/), etc.
+The easiest way to get started is to add a user with the Studio app as show below.
 
-```bash
-curl --location 'https://{YOUR_APP}.codehooks.io/auth/createuser' \
---header 'x-apikey: {YOUR_API_KEY}' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "username": "jane@example.com",
-    "password": "MySecretPassword"
-}'
-```
-
-Tip: use openssl to generate a random password for the user.
-
-```bash
-openssl rand -base64 32
-```
-
-Now this user can login with the email and password.
-
-Let's go ahead and list the users to find the record of the user we just created.
-
-```bash
-coho query users --pretty
-```
-
-Example output, first user has a password, the second user has a google profile. Note the success and fail counts for each user.
-
-```bash
-{
-  email: 'jane@example.com',
-  password: '$2a$10$fs91FTvuJA.OS.xN2EYpHOturmWBVopp0sEdXsvd9c6q1QjxJhMki',
-  created: '2024-09-07T10:16:16.056Z',
-  _id: '66dc27f00c5913534a906e9f',
-  success: 8,
-  lastLogin: '2024-09-08T07:17:26.034Z',
-  fail: 3,
-  lastFail: '2024-09-08T07:17:22.473Z'
-}
-{
-  email: 'joe@example.com',
-  google_profile: {
-    id: '116063462675595629092',
-    email: 'joe@example.com',
-    verified_email: true,
-    picture: 'https://lh3.googleusercontent.com/a-/ALV-UjXBXzWzBflMe7jgUKXd1h41tT8KTmPRCv9Jq7wJO2j2EN4UAIU=s96-c',
-    hd: 'example.com'
-  },
-  _id: '66d75a487772ce9c01d30ae7',
-  visits: 1
-}
-```
+![add-user](./examples/images/users.png)
 
 ## Configuration
 
