@@ -9,18 +9,24 @@ import { app, coho, Datastore, httpRequest, httpResponse, nextFunction } from 'c
  * Password authentication strategy
  */
 export const passwordAuth: AuthStrategy = {
-settings: null,
-  initialize: (cohoApp, settings) => {
-    // Initialize any password-specific settings
-    passwordAuth.settings = settings;
-    // user/pass from login form
-    cohoApp.post('/auth/login', passwordAuth.login)
-    // custom route to create a new user
-    cohoApp.post('/auth/createuser', createUser)
-  },
+    settings: null,
+    onSignupUser: null,
+    onLoginUser: null,
+    sendMail: null,
+    initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendMail) => {
+        // Initialize any password-specific settings
+        passwordAuth.settings = settings;
+        passwordAuth.onSignupUser = onSignupUser;
+        passwordAuth.onLoginUser = onLoginUser;
+        passwordAuth.sendMail = sendMail;
+        // user/pass from login form
+        cohoApp.post('/auth/login', passwordAuth.login)
+        // custom route to create a new user
+        cohoApp.post('/auth/createuser', createUser)
+    },
 
-  login: async (req, res) => {
-    try {
+    login: async (req, res) => {
+        try {
         const { username, password } = req.body;
         //console.log('login route', username, password)
         console.debug('Login Request', req)

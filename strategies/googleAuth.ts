@@ -12,13 +12,19 @@ import { Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js
  */
 export const googleAuth: AuthStrategy = {
   settings: null,
-  initialize: (cohoApp, settings) => {
+  onSignupUser: null,
+  onLoginUser: null,
+  sendMail: null,
+  initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendMail) => {
     // Initialize Google-specific settings
     if (!settings.google) {
         console.error('Google settings are required')
         return
     }
     googleAuth.settings = settings;
+    googleAuth.onSignupUser = onSignupUser;
+    googleAuth.onLoginUser = onLoginUser;
+    googleAuth.sendMail = sendMail;
     // set default URI and scope
     if (!settings.google.REDIRECT_URI) {
         settings.google.REDIRECT_URI = '/auth/oauthcallback/google'
@@ -42,7 +48,12 @@ export const googleAuth: AuthStrategy = {
         next('Google Auth callback not implemented');
       }
     });
+    cohoApp.get('/auth/signup/google', googleAuth.signup );
         
+  },
+  signup: async (req:httpRequest, res:httpResponse) => {
+    req.headers['signup-flow'] = true;
+    googleAuth.login(req, res)
   },
 
   login: async (req:httpRequest, res:httpResponse) => {
@@ -59,9 +70,8 @@ export const googleAuth: AuthStrategy = {
 
         // Store state in the session for 1 minute
         const conn = await Datastore.open()
-        const session_state = await conn.set(`session_state:${state}`, state, {ttl: 1000*60, keyspace: 'codehooks-auth'})
-        console.log('Stored session_state', session_state)
-
+        await conn.set(`session_state:${state}`, JSON.stringify({state, signup: req.headers['signup-flow'] || false}), {ttl: 1000*60, keyspace: 'codehooks-auth'})
+        
         // Generate a url that asks permissions for the Drive activity scope
         const authorizationUrl = oauth2Client.generateAuthUrl({
             // 'online' (default) or 'offline' (gets refresh_token)
@@ -97,9 +107,9 @@ export const googleAuth: AuthStrategy = {
                 googleAuth.settings.google.REDIRECT_URI
             );
             const conn = await Datastore.open()
-            const session_state = await conn.get(`session_state:${state}`, {keyspace: 'codehooks-auth'})
+            const session_state = JSON.parse(await conn.get(`session_state:${state}`, {keyspace: 'codehooks-auth'}))
             console.log('State check', state, session_state)
-            if (state !== session_state) { //check state value
+            if (state !== session_state.state) { //check state value
                 console.log('State mismatch. Possible CSRF attack');
                 res.end('State mismatch. Possible CSRF attack');
             } else { // Get access and refresh tokens (if access_type is offline)
@@ -123,44 +133,16 @@ export const googleAuth: AuthStrategy = {
                     const googleUser: any = await fetchResponse.json();
                     const email = googleUser.email;
                     console.log("Profile", googleUser);
-                    const conn = await Datastore.open();
-                    // upsert a user in the users collection
-                    const upsertResult = await conn.updateOne('users', {"email": email},{$set: { "email": email, "google_profile": googleUser },$inc: { "visits": 1 }}, {upsert: true});
-                    console.log("Upsert result", upsertResult);
-                    const acctokkey = crypto.randomBytes(32).toString('hex');
-
                     
-                    const token = jwt.sign({ email, id: upsertResult._id }, googleAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: googleAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
-                    const refreshToken = jwt.sign({ email, id: upsertResult._id }, googleAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: googleAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
-                    console.log('Google access token', googleAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE, token)
-                    // Store JWT in the session for 1 minute
-                    //await conn.set(`refresh-token:${refreshToken}`, refreshToken, {ttl: 1000*60*8, keyspace: 'codehooks-auth'})
-                    
-                    if (googleAuth.settings.useCookie) {
-                        const refreshTokenCookie = cookie.serialize('refresh-token', refreshToken, {
-                            sameSite: "none",
-                            path: '/auth/refreshtoken',
-                            secure: true,
-                            httpOnly: true,
-                            maxAge: Number(ms(googleAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE)) / 1000 // 8 days
-                        });
-
-                        const accessTokenCookie = cookie.serialize('access-token', token, {
-                            sameSite: "none",
-                            path: '/',
-                            secure: true,
-                            httpOnly: true,
-                            maxAge: Number(ms(googleAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE)) / 1000 // 15 minutes from now
-                        });
-
-                        res.setHeader('Set-Cookie', [refreshTokenCookie, accessTokenCookie]);
-                    }
-                    console.log('Google cookies', res.headers)
-                    if (googleAuth.settings.onAuthUser) {
-                        googleAuth.settings.onAuthUser(req, res, {access_token: token, user: upsertResult, method: "GOOGLE"})
+                    if (session_state.signup) {
+                        console.debug('Signup flow', session_state.signup)
+                        const {token, refreshToken} = await googleAuth.onSignupUser(req, res, { ...googleUser })          
+                        res.redirect(302, `${googleAuth.settings.redirectSuccessUrl}#access_token=${token}&refresh_token=${refreshToken}&signup=true`)     
                     } else {
-                        res.redirect(302, `${googleAuth.settings.redirectSuccessUrl}#access_token=${token}`)
-                    }                    
+                        console.debug('Login flow', session_state.signup)
+                        const {token, refreshToken} = await googleAuth.onLoginUser(req, res, { ...googleUser }) 
+                        res.redirect(302, `${googleAuth.settings.redirectSuccessUrl}#access_token=${token}&refresh_token=${refreshToken}&login=true`)     
+                    }                     
                 } catch (ex) {
                     console.error(ex)
                     res.status(500).end('Error getting profile')

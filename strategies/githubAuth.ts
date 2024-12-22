@@ -11,13 +11,19 @@ import { Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js
  */
 export const githubAuth: AuthStrategy = {
   settings: null,
-  initialize: (cohoApp, settings) => {
+  onSignupUser: null,
+  onLoginUser: null,
+  sendMail: null,
+  initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendMail) => {
     // Initialize GitHub-specific settings
     if (!settings.github) {
       console.error('GitHub settings are required')
       return
-  }
+    }
     githubAuth.settings = settings;
+    githubAuth.onSignupUser = onSignupUser;
+    githubAuth.onLoginUser = onLoginUser;
+    githubAuth.sendMail = sendMail;
     // set default URI and scope
     if (!settings.github.REDIRECT_URI) {
         settings.github.REDIRECT_URI = '/auth/oauthcallback/github'
@@ -39,19 +45,26 @@ export const githubAuth: AuthStrategy = {
         next('GitHub Auth callback not implemented');
       }
     });
+    cohoApp.get('/auth/signup/github', githubAuth.signup )
+  },
+
+  signup: async (req: httpRequest, res: httpResponse) => {
+    console.log('signup github')
+    req.headers['signup-flow'] = true;
+    githubAuth.login(req, res)
   },
 
   login: async (req: httpRequest, res: httpResponse) => {
     if (githubAuth.settings.github) {
       const state = crypto.randomBytes(32).toString('hex');
       const conn = await Datastore.open()
-      await conn.set(`session_state:${state}`, state, {ttl: 1000*60, keyspace: 'codehooks-auth'})
+      await conn.set(`session_state:${state}`, JSON.stringify({state, signup: req.headers['signup-flow'] || false}), {ttl: 1000*60, keyspace: 'codehooks-auth'})
 
       const authorizationUrl = `https://github.com/login/oauth/authorize?` +
         `client_id=${githubAuth.settings.github.CLIENT_ID}` +
         `&redirect_uri=${encodeURIComponent(githubAuth.settings.github.REDIRECT_URI)}` +
         `&scope=${encodeURIComponent(githubAuth.settings.github.SCOPE)}` +
-        `&state=${state}`;
+        `&state=${state}`
 
       console.log('Redirect to GitHub', authorizationUrl)
       res.redirect(authorizationUrl)
@@ -64,8 +77,19 @@ export const githubAuth: AuthStrategy = {
     if (githubAuth.settings.github) {
       // ... (state validation logic) ...
 
-      const { code } = req.query;
-      
+      const { code, state } = req.query;
+      // check state
+      const conn = await Datastore.open()
+      const session_state = JSON.parse(await conn.get(`session_state:${state}`, {keyspace: 'codehooks-auth'}))
+      console.debug('State check', state, session_state)
+      if (state !== session_state.state) { //check state value
+          console.error('State mismatch. Possible CSRF attack');
+          res.status(401).end('Something went wrong');
+          return;
+      }
+      // delete session key
+      conn.del(`session_state:${state}`, {keyspace: 'codehooks-auth'})
+
       // Exchange code for access token
       const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
         method: 'POST',
@@ -91,45 +115,24 @@ export const githubAuth: AuthStrategy = {
       });
 
       const githubUser: any = await userResponse.json();
-      const email = githubUser.email;
-
-      // upsert a user in the users collection
-      const conn = await Datastore.open();
-      const upsertResult = await conn.updateOne('users', {"email": email},{$set: { "email": email, "github_profile": githubUser },$inc: { "visits": 1 }}, {upsert: true});
-      console.log("Upsert result", upsertResult);
-      const acctokkey = crypto.randomBytes(32).toString('hex');
-
       
-      const token = jwt.sign({ email, id: upsertResult._id }, githubAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: githubAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
-      const refreshToken = jwt.sign({ email, id: upsertResult._id }, githubAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: githubAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
-      console.log('Github access token', githubAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE, token)
-
-      if (githubAuth.settings.useCookie) {
-        const refreshTokenCookie = cookie.serialize('refresh-token', refreshToken, {
-            sameSite: "none",
-            path: '/auth/refreshtoken',
-            secure: true,
-            httpOnly: true,
-            maxAge: Number(ms(githubAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE)) / 1000 // 8 days
-        });
-
-        const accessTokenCookie = cookie.serialize('access-token', token, {
-            sameSite: "none",
-            path: '/',
-            secure: true,
-            httpOnly: true,
-            maxAge: Number(ms(githubAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE)) / 1000 // 15 minutes from now
-        });
-
-        res.setHeader('Set-Cookie', [refreshTokenCookie, accessTokenCookie]);
-      }
-
-      if (githubAuth.settings.onAuthUser) {
-        githubAuth.settings.onAuthUser(req, res, {access_token: token, user: upsertResult, method: "GITHUB"})
-      } else {
-        console.debug('Github Redirecting to', `${githubAuth.settings.redirectSuccessUrl}#access_token=${token}`)
-        res.redirect(302, `${githubAuth.settings.redirectSuccessUrl}#access_token=${token}`)
-      }
+      try { 
+        if (session_state.signup) {
+          console.debug('Signup flow', session_state.signup)
+          const {token, refreshToken} = await githubAuth.onSignupUser(req, res, { ...githubUser })          
+          res.redirect(302, `${githubAuth.settings.redirectSuccessUrl}#access_token=${token}&refresh_token=${refreshToken}&signup=true`)     
+        } else {
+          console.debug('Login flow', session_state.signup)
+          const {token, refreshToken} = await githubAuth.onLoginUser(req, res, { ...githubUser }) 
+          res.redirect(302, `${githubAuth.settings.redirectSuccessUrl}#access_token=${token}&refresh_token=${refreshToken}&login=true`)     
+        } 
+      } catch (error) {
+        console.error('Error during signup or login', error)
+        //res.status(400).json({error, message: 'Something went wrong'})
+        res.redirect(302, `${githubAuth.settings.redirectFailUrl}#error=${error.error}`)
+        return
+      }      
+      
     } else {
       res.status(400).end('GitHub settings is not defined')
     }

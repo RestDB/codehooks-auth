@@ -2,8 +2,12 @@ import { app, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
 
 export interface AuthStrategy {
     settings: any,
-    initialize: (cohoApp: typeof app, settings: any) => void;
+    onSignupUser: (req: httpRequest, res: httpResponse, payload: any) => Promise<any>,
+    onLoginUser: (req: httpRequest, res: httpResponse, payload: any) => Promise<any>,
+    sendMail: (content: Object) => Promise<any>,
+    initialize: (cohoApp: typeof app, settings: any, onSignupUser: (req: httpRequest, res: httpResponse, payload: any) => Promise<any>, onLoginUser: (req: httpRequest, res: httpResponse, payload: any) => Promise<any>, sendMail: (content: Object) => Promise<any>) => void;
     login: (req: httpRequest, res: httpResponse) => Promise<void>;
+    signup?: (req: httpRequest, res: httpResponse) => Promise<void>;
     verify?: (req: httpRequest, res: httpResponse) => Promise<void>;
     callback?: (req: httpRequest, res: httpResponse, next?: nextFunction) => Promise<void>;
 }
@@ -31,11 +35,31 @@ export type AuthSettings = {
         REDIRECT_URI?: string,
         SCOPE?: string | string[]
     },
-    email?: {
-        MAILGUN_APIKEY: string,
-        MAILGUN_DOMAIN: string,
-        MAILGUN_FROM_EMAIL: string,
-        MAILGUN_FROM_NAME: string
+    emailProvider: 'mailgun' | 'postmark' | 'sendgrid' | 'none',
+    emailSettings?: {
+        mailgun?: {
+            MAILGUN_APIKEY: string,
+            MAILGUN_DOMAIN: string,
+            MAILGUN_FROM_EMAIL: string,
+            MAILGUN_FROM_NAME: string
+        },
+        sendgrid?: {
+            SENDGRID_APIKEY: string,
+            SENDGRID_FROM_EMAIL: string,
+            SENDGRID_FROM_NAME: string
+        },
+        postmark?: {
+            POSTMARK_APIKEY: string,
+            POSTMARK_FROM_EMAIL: string,
+            POSTMARK_FROM_NAME: string
+        }
     },
-    onAuthUser?: (req:httpRequest, res:httpResponse, payload: any) => void
+    labels?: {
+        signinTitle?: string,
+        signupTitle?: string,
+        forgotTitle?: string,
+        otpTitle?: string
+    },
+    onLoginUser?: (req:httpRequest, res:httpResponse, payload: any) => void,
+    onSignupUser?: (req:httpRequest, res:httpResponse, payload: any) => void
 }

@@ -3,16 +3,22 @@ import jwt from 'jsonwebtoken';
 import cookie from 'cookie';
 import ms from 'ms';
 import { AuthStrategy } from '../types';
-import { sendMail } from './mailgun';
 import { Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
 import { from } from 'form-data';
+import { sign } from 'crypto';
 
 /**
  * OTP authentication strategy
  */
 export const otpAuth: AuthStrategy = {
     settings: null,
-    initialize: (cohoApp, settings) => {
+    onSignupUser: null,
+    onLoginUser: null,
+    sendMail: null,
+    initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendMail) => {
+        otpAuth.onSignupUser = onSignupUser;
+        otpAuth.onLoginUser = onLoginUser;
+        otpAuth.sendMail = sendMail;
         // Initialize any otp-specific settings
         otpAuth.settings = settings;
         // user uto from login form
@@ -24,44 +30,40 @@ export const otpAuth: AuthStrategy = {
 
     login: async (req: httpRequest, res: httpResponse) => {
         try {
-            const { username } = req.body;
+            const db = await Datastore.open();
+            const { username, signup } = req.body;
+            let signupData = null;
             //console.log('login route', username, password)
-            console.debug('Login Request', req)
-            let cookies = null;
-            if (req.headers.cookie) {
-                cookies = cookie.parse(req.headers.cookie);
-                //console.log('cookies', cookies)
+            console.log('Login Request', req)
+            if (signup && signup === 'true') {                
+                await otpAuth.onSignupUser(req, res, { email: username, ...req.body })
             }
-
-            const db = await Datastore.open()
+            console.log('Lookup user', username)
+            
             const aUser = await db.getOne('users', { email: username })
-            console.log('aUser', aUser)
+            console.debug('aUser', aUser)
 
-            if (aUser) {
-                const loginData = await db.updateOne('users', { email: username }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
-                // Generate a 6-digit OTP code
-                const otpCode = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
-                await db.set(`otp:${username}`, otpCode, { ttl: 60 * 1000 * 5 }); // 5 minutes
-                await sendMail({email: username, otp: otpCode, from: 'jones@codehooks.io'});
-                res.status(201).json({ message: "OTP sent", email: username })
-
-            } else {
-                const loginData = await db.updateOne('users', { email: username }, { $set: { lastFail: new Date().toISOString() }, $inc: { "fail": 1 } })
-                console.log(loginData)
-                //res.redirect(302, `${otpAuth.settings.redirectFailUrl}#code=error`)
-                res.status(401).json({ redirectURL: `${otpAuth.settings.redirectFailUrl}#code=error?usernotfound=${username}` })
-            }
+            //const loginData = await db.updateOne('users', { email: username }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
+            //console.debug('loginData exists', loginData)
+            // Generate a 6-digit OTP code
+            const otpCode = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+            console.debug('otpCode', otpCode)
+            await db.set(`otp:${username}`, otpCode, { ttl: 60 * 1000 * 5 }); // 5 minutes
+            await otpAuth.sendMail({to: username, otp: otpCode});
+            // res.redirect(302, `${settings.redirectSuccessUrl}#access_token=${token}&signup=true`)
+            res.status(201).json({ message: "OTP sent", email: username })
+            
         } catch (error: any) {
             console.error('OTP login error:', error)
             //res.redirect(302, otpAuth.settings.redirectFailUrl)
-            res.status(500).json({ redirectURL: `${otpAuth.settings.redirectFailUrl}#code=error` })
+            res.status(401).json({ redirectURL: `${otpAuth.settings.redirectFailUrl}#error=${error.message}` })
         }
     },
 
     verify: async (req: httpRequest, res: httpResponse) => {
         const { email, otp } = req.body;
         const db = await Datastore.open()
-        console.debug('verify otp', email, otp)
+        console.debug('verify otp', req.body)
         const otpCode = await db.get(`otp:${email}`);
         console.debug('otpCode', otpCode);
         if (otpCode !== otp) {

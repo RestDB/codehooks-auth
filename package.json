@@ -6,17 +6,21 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc --declaration  --outDir dist",
-    "postinstall": "node -e \"if(process.env.INIT_CWD !== process.cwd()) require('child_process').execSync('cp -r auth $INIT_CWD', {stdio: 'inherit'})\"",
-    "test": "echo no tests yet"
+    "postinstall": "node scripts/postinstall.js",
+    "test": "echo no tests yet",
+    "css": "tailwindcss -i ./auth/assets/input.css -o ./auth/assets/styles.css"
   },
   "author": "jones@restdb.io",
   "license": "ISC",
   "dependencies": {
+    "@tailwindcss/typography": "^0.5.15",
     "bcryptjs": "^2.4.3",
     "codehooks-js": "^1.2.18",
     "cookie": "^0.7.1",
     "form-data": "^4.0.1",
+    "fs-extra": "^11.2.0",
     "googleapis": "^143.0.0",
+    "handlebars": "^4.7.8",
     "jsonwebtoken": "^9.0.2",
     "ms": "^2.1.3",
     "node-fetch": "^3.3.2"
@@ -27,7 +31,8 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/ms": "^0.7.34",
     "@types/node": "^22.5.0",
-    "typescript": "^5.5.4"
+    "tailwindcss": "^3.4.16",
+    "typescript": "^5.7.2"
   },
   "publishConfig": {
     "access": "public"
