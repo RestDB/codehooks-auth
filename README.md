@@ -188,41 +188,6 @@ You can customize the authentication UI labels:
     }
 }
 ```
-## Authentication server routes
-
-The authentication server routes are:
-- `/auth/login`
-- `/auth/signup`
-- `/auth/otp`
-- `/auth/oauthcallback/google`
-- `/auth/oauthcallback/github`
-- `/auth/refreshtoken`
-
-## Refresh Token
-
-The refresh token is used to get a new access token when the current access token expires. The refresh token is stored in a httpOnly cookie.
-
-Call the `/auth/refresh` endpoint with the refresh token in the httpOnly cookie to get a new access token.
-
-```javascript
-const response = await fetch('https://{YOUR_APP_URL}.codehooks.io/auth/refreshtoken', {
-    method: 'POST',
-    credentials: "include",
-    headers: { 
-        'Content-Type': 'application/json' 
-    }
-});
-if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-}
-const result = await response.json()
-console.log('new access token', result.access_token);
-```
-
-
-## Security Note
-
-Always keep your JWT secrets and OAuth client secrets secure. Use environment variables for sensitive information in production.
 
 ### Authentication API routes
 These are the routes that are used by the client web app to authenticate users. The routes are automatically created by the `initAuth` function.
@@ -252,5 +217,31 @@ These are the routes that are used by the client web app to authenticate users. 
 #### Additional Routes
 - `/auth/forgot` - Forgot password page (GET) (Currently returns "Not implemented")
 - `/auth/*` - Static asset serving for auth-related files
+
+## Refresh Token
+
+The refresh token is used to get a new access token when the current access token expires. The refresh token is stored in a httpOnly cookie.
+
+Call the `/auth/refresh` endpoint with the refresh token in the httpOnly cookie to get a new access token.
+
+```javascript
+const response = await fetch('https://{YOUR_APP_URL}.codehooks.io/auth/refreshtoken', {
+    method: 'POST',
+    credentials: "include",
+    headers: { 
+        'Content-Type': 'application/json' 
+    }
+});
+if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+}
+const result = await response.json()
+console.log('new access token', result.access_token);
+```
+
+
+## Security Note
+
+Always keep your JWT secrets and OAuth client secrets secure. Use environment variables for sensitive information in production.
 
 
