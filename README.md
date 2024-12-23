@@ -3,7 +3,7 @@ Open source client app authentication for Codehooks.io REST API backends.
 
 **codehooks-auth** is a library that provides easy-to-use authentication functionality for Codehooks.io REST API backends. It supports various authentication methods, including one time password authentication and OAuth (Google and Github).
 
-The **codehooks-auth** library aims to provide a simple and easy to use alternative for those who prefer not to use these providers or for those who need more control over the authentication process.
+The **codehooks-auth** library aims to provide a simple and easy to use alternative for those who prefer not to use commercial providers or for those who need more control over the authentication process.
 
 >Note: Codehooks.io supports leading JWT based authentication providers like [Auth0.com](https://auth0.com) and [Clerk.com](https://clerk.com). 
 
