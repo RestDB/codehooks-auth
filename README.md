@@ -188,7 +188,15 @@ You can customize the authentication UI labels:
     }
 }
 ```
+## Authentication server routes
 
+The authentication server routes are:
+- `/auth/login`
+- `/auth/signup`
+- `/auth/otp`
+- `/auth/oauthcallback/google`
+- `/auth/oauthcallback/github`
+- `/auth/refreshtoken`
 
 ## Refresh Token
 
@@ -215,5 +223,34 @@ console.log('new access token', result.access_token);
 ## Security Note
 
 Always keep your JWT secrets and OAuth client secrets secure. Use environment variables for sensitive information in production.
+
+### Authentication API routes
+These are the routes that are used by the client web app to authenticate users. The routes are automatically created by the `initAuth` function.
+
+#### Core Auth Routes
+- `/auth/login` - Main login page (GET)
+- `/auth/signup` - Signup page (GET)
+- `/auth/logout` - Logout endpoint (GET)
+- `/auth/accesstoken` - Get JWT from access token (POST)
+- `/auth/refreshtoken` - Refresh access token (POST)
+
+#### OTP (One-Time Password) Routes
+- `/auth/otp` - OTP login page (GET)
+- `/auth/otp` - Send OTP code (POST)
+- `/auth/otp/verify` - Verify OTP code (POST)
+
+#### Google OAuth Routes
+- `/auth/login/google` - Initiate Google OAuth login (GET)
+- `/auth/signup/google` - Initiate Google OAuth signup (GET)
+- `/auth/oauthcallback/google` - Google OAuth callback (GET)
+
+#### GitHub OAuth Routes
+- `/auth/login/github` - Initiate GitHub OAuth login (GET)
+- `/auth/signup/github` - Initiate GitHub OAuth signup (GET)
+- `/auth/oauthcallback/github` - GitHub OAuth callback (GET)
+
+#### Additional Routes
+- `/auth/forgot` - Forgot password page (GET) (Currently returns "Not implemented")
+- `/auth/*` - Static asset serving for auth-related files
 
 
