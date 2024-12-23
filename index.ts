@@ -13,6 +13,7 @@ import { getJwtForAccessToken, refreshAccessToken, verifyAccessToken } from './l
 import * as jwt from 'jsonwebtoken';
 import ms from 'ms';
 import * as cookie from 'cookie';
+import { randomBytes } from 'crypto';
 const layoutTemplate = handlebars.compile(layoutHbs);
 const loginTemplate = handlebars.compile(loginHbs);
 const otpTemplate = handlebars.compile(otpHbs);
@@ -32,9 +33,9 @@ const strategies = {
 let settings: AuthSettings = {
     userCollection: 'users', //database collection for users
     saltRounds: 10, // Number of salt rounds for hashing
-    JWT_ACCESS_TOKEN_SECRET: process.env.JWT_ACCESS_TOKEN_SECRET || 'keep_locked_away',
+    JWT_ACCESS_TOKEN_SECRET: process.env.JWT_ACCESS_TOKEN_SECRET || randomBytes(32).toString('hex'),
     JWT_ACCESS_TOKEN_SECRET_EXPIRE: '15m',
-    JWT_REFRESH_TOKEN_SECRET: process.env.JWT_REFRESH_TOKEN_SECRET || 'bury_in_the_sand',
+    JWT_REFRESH_TOKEN_SECRET: process.env.JWT_REFRESH_TOKEN_SECRET || randomBytes(32).toString('hex'),
     JWT_REFRESH_TOKEN_SECRET_EXPIRE: '8d',
     redirectSuccessUrl: '/',
     redirectFailUrl: '/',
