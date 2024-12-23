@@ -44,6 +44,7 @@
   "files": [
     "dist",
     "auth",
-    "README.md"
+    "README.md",
+    "scripts"
   ]
 }
