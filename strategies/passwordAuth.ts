@@ -37,12 +37,12 @@ export const passwordAuth: AuthStrategy = {
         }
 
         const db = await Datastore.open()
-        const aUser = await db.getOne('users', { email: username })
+        const aUser = await db.getOne(passwordAuth.settings.userCollection, { email: username })
         const match = await checkPassword(password, aUser.password)
         console.log('aUser', aUser, match)
 
         if (match) {
-            const loginData = await db.updateOne('users', { email: username }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
+            const loginData = await db.updateOne(passwordAuth.settings.userCollection, { email: username }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
             console.log(loginData)
             var token = jwt.sign({ email: username, id: loginData._id }, passwordAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: passwordAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
             var refreshToken = jwt.sign({ email: username, id: loginData._id }, passwordAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: passwordAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
@@ -76,7 +76,7 @@ export const passwordAuth: AuthStrategy = {
                 res.redirect(302, `${passwordAuth.settings.redirectSuccessUrl}#access_token=${token}`)
             }  
         } else {
-            const loginData = await db.updateOne('users', { email: username }, { $set: { lastFail: new Date().toISOString() }, $inc: { "fail": 1 } })
+            const loginData = await db.updateOne(passwordAuth.settings.userCollection, { email: username }, { $set: { lastFail: new Date().toISOString() }, $inc: { "fail": 1 } })
             console.log(loginData)
             if (passwordAuth.settings.redirectFailUrl === '') {
                 res.status(401).json({ message: "Bummer, not valid user/pass", error: true })

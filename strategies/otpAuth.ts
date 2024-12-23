@@ -40,7 +40,7 @@ export const otpAuth: AuthStrategy = {
             }
             console.log('Lookup user', username)
             
-            const aUser = await db.getOne('users', { email: username })
+            const aUser = await db.getOne(otpAuth.settings.userCollection, { email: username })
             console.debug('aUser', aUser)
 
             //const loginData = await db.updateOne('users', { email: username }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
@@ -70,11 +70,11 @@ export const otpAuth: AuthStrategy = {
             res.status(401).json({ message: "Invalid OTP" });
             return;
         }
-        const aUser = await db.getOne('users', { email: email })
+        const aUser = await db.getOne(otpAuth.settings.userCollection, { email: email })
         console.log('aUser', aUser)
 
         if (aUser) {
-            const loginData = await db.updateOne('users', { email: email }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
+            const loginData = await db.updateOne(otpAuth.settings.userCollection, { email: email }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
             // Generate a 6-digit OTP code
             const token = jwt.sign({ email: email, id: loginData._id }, otpAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: otpAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
             const refreshToken = jwt.sign({ email: email, id: loginData._id }, otpAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: otpAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });

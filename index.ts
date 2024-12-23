@@ -126,6 +126,10 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
                 script: 'otp.js'
             }))
         })
+        
+        cohoApp.get('/auth/logout', async (req: httpRequest, res: httpResponse) => {
+            logoutUser(req, res)
+        })
 
         // serve static assets
         cohoApp.static({ route: '/auth', directory: '/auth/assets' })
@@ -206,7 +210,7 @@ async function onSignupUser(req: httpRequest, res: httpResponse, payload: any) {
         console.debug('onSignupUser', payload)
         
         // user does not exist, create new user
-        signupData = await db.updateOne('users', {email: payload.email}, {$set: {email: payload.email, firstLogin: new Date().toISOString(), ...payload}}, {upsert: true})
+        signupData = await db.updateOne(settings.userCollection, {email: payload.email}, {$set: {email: payload.email, firstLogin: new Date().toISOString(), ...payload}}, {upsert: true})
         console.debug('signupData', signupData)
         const token = jwt.sign({ email: payload.email, id: signupData._id }, settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
         const refreshToken = jwt.sign({ email: payload.email, id: signupData._id }, settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
@@ -227,7 +231,7 @@ async function onLoginUser(req: httpRequest, res: httpResponse, payload: any) {
     return new Promise(async (resolve, reject) => { 
         const db = await Datastore.open();
         try {
-            const aUser = await db.getOne('users', { email: payload.email })
+            const aUser = await db.getOne(settings.userCollection, { email: payload.email })
             console.debug('onLoginUser', aUser)
             const token = jwt.sign({ email: aUser.email, id: aUser._id }, settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
             const refreshToken = jwt.sign({ email: aUser.email, id: aUser._id }, settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
@@ -237,7 +241,7 @@ async function onLoginUser(req: httpRequest, res: httpResponse, payload: any) {
             } else if (settings.useCookie) {
                 setAuthCookies(res, token, refreshToken);
             }
-            await db.updateOne('users', { email: payload.email }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })  
+            await db.updateOne(settings.userCollection, { email: payload.email }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })  
             console.debug('Github login Redirecting to', `${settings.redirectSuccessUrl}#access_token=${token}&login=true`)
             //res.redirect(302, `${settings.redirectSuccessUrl}#access_token=${token}&login=true`)
             resolve({ token, refreshToken })
@@ -245,5 +249,27 @@ async function onLoginUser(req: httpRequest, res: httpResponse, payload: any) {
             reject({error: "User not found"})
         }
     })
+}
+
+// logout user by setting cookies to expire immediately
+async function logoutUser(req: httpRequest, res: httpResponse) {
+    const accessTokenCookie = cookie.serialize('access-token', '', {
+        sameSite: "none",
+        path: '/',
+        secure: true,
+        httpOnly: true,
+        expires: new Date(0)  // Set to epoch time to expire immediately
+    });
+
+    const refreshTokenCookie = cookie.serialize('refresh-token', '', {
+        sameSite: "none",
+        path: '/auth/refreshtoken',
+        secure: true,
+        httpOnly: true,
+        expires: new Date(0)  // Set to epoch time to expire immediately
+    });
+
+    res.setHeader('Set-Cookie', [accessTokenCookie, refreshTokenCookie]);
+    res.redirect(302, settings.redirectSuccessUrl);
 }
 
