@@ -4,7 +4,7 @@ export interface AuthStrategy {
     settings: any,
     onSignupUser: (req: httpRequest, res: httpResponse, payload: any) => Promise<any>,
     onLoginUser: (req: httpRequest, res: httpResponse, payload: any) => Promise<any>,
-    sendMail: (content: Object) => Promise<any>,
+    sendOTPMail: (content: Object) => Promise<any>,
     initialize: (cohoApp: typeof app, settings: any, onSignupUser: (req: httpRequest, res: httpResponse, payload: any) => Promise<any>, onLoginUser: (req: httpRequest, res: httpResponse, payload: any) => Promise<any>, sendMail: (content: Object) => Promise<any>) => void;
     login: (req: httpRequest, res: httpResponse) => Promise<void>;
     signup?: (req: httpRequest, res: httpResponse) => Promise<void>;
@@ -19,6 +19,7 @@ export type AuthSettings = {
     JWT_ACCESS_TOKEN_SECRET_EXPIRE?: string,
     JWT_REFRESH_TOKEN_SECRET:string,
     JWT_REFRESH_TOKEN_SECRET_EXPIRE?: string,
+    baseUrl: string,
     redirectSuccessUrl?: string,
     redirectFailUrl?: string,
     useCookie?: boolean,

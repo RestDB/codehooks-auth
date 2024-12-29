@@ -13,8 +13,8 @@ export const githubAuth: AuthStrategy = {
   settings: null,
   onSignupUser: null,
   onLoginUser: null,
-  sendMail: null,
-  initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendMail) => {
+  sendOTPMail: null,
+  initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendOTPMail) => {
     // Initialize GitHub-specific settings
     if (!settings.github) {
       console.error('GitHub settings are required')
@@ -23,7 +23,7 @@ export const githubAuth: AuthStrategy = {
     githubAuth.settings = settings;
     githubAuth.onSignupUser = onSignupUser;
     githubAuth.onLoginUser = onLoginUser;
-    githubAuth.sendMail = sendMail;
+    githubAuth.sendOTPMail = sendOTPMail;
     // set default URI and scope
     if (!settings.github.REDIRECT_URI) {
         settings.github.REDIRECT_URI = '/auth/oauthcallback/github'

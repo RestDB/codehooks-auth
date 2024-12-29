@@ -12,13 +12,13 @@ export const passwordAuth: AuthStrategy = {
     settings: null,
     onSignupUser: null,
     onLoginUser: null,
-    sendMail: null,
-    initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendMail) => {
+    sendOTPMail: null, 
+    initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendOTPMail) => {
         // Initialize any password-specific settings
         passwordAuth.settings = settings;
         passwordAuth.onSignupUser = onSignupUser;
         passwordAuth.onLoginUser = onLoginUser;
-        passwordAuth.sendMail = sendMail;
+        passwordAuth.sendOTPMail = sendOTPMail;
         // user/pass from login form
         cohoApp.post('/auth/login', passwordAuth.login)
         // custom route to create a new user

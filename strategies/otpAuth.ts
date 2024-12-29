@@ -14,11 +14,11 @@ export const otpAuth: AuthStrategy = {
     settings: null,
     onSignupUser: null,
     onLoginUser: null,
-    sendMail: null,
-    initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendMail) => {
+    sendOTPMail: null,
+    initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendOTPMail) => {
         otpAuth.onSignupUser = onSignupUser;
         otpAuth.onLoginUser = onLoginUser;
-        otpAuth.sendMail = sendMail;
+        otpAuth.sendOTPMail = sendOTPMail;
         // Initialize any otp-specific settings
         otpAuth.settings = settings;
         // user uto from login form
@@ -32,24 +32,20 @@ export const otpAuth: AuthStrategy = {
         try {
             const db = await Datastore.open();
             const { username, signup } = req.body;
+            // Generate a 6-digit OTP code
+            const otpCode = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
             let signupData = null;
             //console.log('login route', username, password)
             console.log('Login Request', req)
             if (signup && signup === 'true') {                
                 await otpAuth.onSignupUser(req, res, { email: username, ...req.body })
-            }
-            console.log('Lookup user', username)
+            } else {
+                await otpAuth.sendOTPMail({to: username, otp: otpCode});
+            }            
             
-            const aUser = await db.getOne(otpAuth.settings.userCollection, { email: username })
-            console.debug('aUser', aUser)
-
-            //const loginData = await db.updateOne('users', { email: username }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
-            //console.debug('loginData exists', loginData)
-            // Generate a 6-digit OTP code
-            const otpCode = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
             console.debug('otpCode', otpCode)
             await db.set(`otp:${username}`, otpCode, { ttl: 60 * 1000 * 5 }); // 5 minutes
-            await otpAuth.sendMail({to: username, otp: otpCode});
+            
             // res.redirect(302, `${settings.redirectSuccessUrl}#access_token=${token}&signup=true`)
             res.status(201).json({ message: "OTP sent", email: username })
             

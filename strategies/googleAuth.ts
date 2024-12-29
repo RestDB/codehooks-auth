@@ -14,8 +14,8 @@ export const googleAuth: AuthStrategy = {
   settings: null,
   onSignupUser: null,
   onLoginUser: null,
-  sendMail: null,
-  initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendMail) => {
+  sendOTPMail: null,
+  initialize: (cohoApp, settings, onSignupUser, onLoginUser, sendOTPMail) => {
     // Initialize Google-specific settings
     if (!settings.google) {
         console.error('Google settings are required')
@@ -24,7 +24,7 @@ export const googleAuth: AuthStrategy = {
     googleAuth.settings = settings;
     googleAuth.onSignupUser = onSignupUser;
     googleAuth.onLoginUser = onLoginUser;
-    googleAuth.sendMail = sendMail;
+    googleAuth.sendOTPMail = sendOTPMail;
     // set default URI and scope
     if (!settings.google.REDIRECT_URI) {
         settings.google.REDIRECT_URI = '/auth/oauthcallback/google'

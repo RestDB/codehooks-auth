@@ -97,3 +97,25 @@ export const verifyAccessToken = (settings: AuthSettings) => {
         }
     }
 }
+
+export function setAuthCookies(res: httpResponse, token: string, refreshToken: string, settings: AuthSettings) {
+    if (!settings.useCookie) return;
+    
+    const refreshTokenCookie = cookie.serialize('refresh-token', refreshToken, {
+        sameSite: "none",
+        path: '/auth/refreshtoken',
+        secure: true,
+        httpOnly: true,
+        maxAge: Number(ms(settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE)) / 1000
+    });
+
+    const accessTokenCookie = cookie.serialize('access-token', token, {
+        sameSite: "none",
+        path: '/',
+        secure: true,
+        httpOnly: true,
+        maxAge: Number(ms(settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE)) / 1000
+    });
+
+    res.setHeader('Set-Cookie', [refreshTokenCookie, accessTokenCookie]);
+}

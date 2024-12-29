@@ -8,8 +8,12 @@ const layoutHbs = require('./auth/assets/layout.hbs');
 const loginHbs = require('./auth/assets/login.hbs');
 const otpHbs = require('./auth/assets/otp.hbs');
 const signupHbs = require('./auth/assets/signup.hbs');
+const emailTemplateWelcomeHbs = require('./auth/assets/emailTemplateWelcome.hbs');
+const emailTemplateWelcomeTextHbs = require('./auth/assets/emailTemplateWelcomeText.hbs');
+const emailTemplateOTPHbs = require('./auth/assets/emailTemplateOTP.hbs');
+const emailTemplateOTPTextHbs = require('./auth/assets/emailTemplateOTPText.hbs');
 import { app, Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
-import { getJwtForAccessToken, refreshAccessToken, verifyAccessToken } from './lib';
+import { getJwtForAccessToken, refreshAccessToken, verifyAccessToken, setAuthCookies } from './lib';
 import * as jwt from 'jsonwebtoken';
 import ms from 'ms';
 import * as cookie from 'cookie';
@@ -18,6 +22,10 @@ const layoutTemplate = handlebars.compile(layoutHbs);
 const loginTemplate = handlebars.compile(loginHbs);
 const otpTemplate = handlebars.compile(otpHbs);
 const signupTemplate = handlebars.compile(signupHbs);
+const emailTemplateWelcome = handlebars.compile(emailTemplateWelcomeHbs);
+const emailTemplateWelcomeText = handlebars.compile(emailTemplateWelcomeTextHbs);
+const emailTemplateOTP = handlebars.compile(emailTemplateOTPHbs);
+const emailTemplateOTPText = handlebars.compile(emailTemplateOTPTextHbs);
 import { sendMail as mailgun } from './strategies/mailgun';
 
 
@@ -31,6 +39,7 @@ const strategies = {
 
 // Default settings
 let settings: AuthSettings = {
+    baseUrl: 'http://localhost:3000',
     userCollection: 'users', //database collection for users
     saltRounds: 10, // Number of salt rounds for hashing
     JWT_ACCESS_TOKEN_SECRET: process.env.JWT_ACCESS_TOKEN_SECRET || randomBytes(32).toString('hex'),
@@ -65,7 +74,7 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
         
         // Initialize strategies
         try {
-            Object.values(strategies).forEach(strategy => strategy.initialize(cohoApp, settings, onSignupUser, onLoginUser, sendMail));
+            Object.values(strategies).forEach(strategy => strategy.initialize(cohoApp, settings, onSignupUser, onLoginUser, sendOTPMail));
         } catch (error) {
             console.error('Error initializing strategies', error)
         }
@@ -142,35 +151,32 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
     }
 }
 
-// Add this new function before onSignupUser
-function setAuthCookies(res: httpResponse, token: string, refreshToken: string) {
-    if (!settings.useCookie) return;
-    
-    const refreshTokenCookie = cookie.serialize('refresh-token', refreshToken, {
-        sameSite: "none",
-        path: '/auth/refreshtoken',
-        secure: true,
-        httpOnly: true,
-        maxAge: Number(ms(settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE)) / 1000
-    });
-
-    const accessTokenCookie = cookie.serialize('access-token', token, {
-        sameSite: "none",
-        path: '/',
-        secure: true,
-        httpOnly: true,
-        maxAge: Number(ms(settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE)) / 1000
-    });
-
-    res.setHeader('Set-Cookie', [refreshTokenCookie, accessTokenCookie]);
-}
 
 // TODO: add mail strategy
-function sendMail(content: Object): Promise<any> {
-    return new Promise((resolve, reject) => {
+async function sendOTPMail(content: Object): Promise<any> {
+    return new Promise(async (resolve, reject) => {
         try {
             console.debug('sendMail', content);
-            
+            const emailData = {
+                productName: 'ProductX',
+                productUrl: settings.baseUrl,
+                name: content['name'] || content['to'],
+                otp: content['otp'],
+                action_text: 'Login',
+                action_url: `${settings.baseUrl}/auth/otp/verify?otp=${content['otp']}&email=${content['to']}`,
+                companyName: 'My company',
+                companyAddress: '123 Main St, Anytown, USA',
+                companySuite: '12345',
+                support_email: 'support@myapp.com',
+                live_chat_url: 'https://myapp.com/livechat',
+                help_url: 'https://myapp.com/help',
+                login_url: `${settings.baseUrl}/auth/login`,
+                username: content['to'],
+                subject: 'One-Time Password',
+                to: content['to'],
+                title: 'One-Time Password',
+                senderName: 'Jones, My company'
+            }
             // Select email provider and settings based on configuration
             const emailProvider = settings.emailProvider || 'mailgun';
             let from: string;
@@ -181,13 +187,13 @@ function sendMail(content: Object): Promise<any> {
                     reject({message: 'No email provider selected'});
                     break;
                 case 'mailgun':
-                    const otp = content['otp'];
-                    const text = `Hi there! Here's your one time password: ${otp}`;
-                    const html = `Hi there! <br/>Here's your one time password: <b>${otp}</b><br/>Best regards, the X team.`;
-                    const subject = 'One-Time Password';
-                    const to = content['to'];
-                    return mailgun(settings.emailSettings.mailgun,{...content, text, html, subject, to}).then(resolve).catch(reject);
-                    
+                    const html = emailTemplateOTP(emailData)
+                    const text = emailTemplateOTPText(emailData)
+                    const subject = emailData.subject;
+                    const to = emailData.to;
+                    console.debug('Sending email to', to, html, text, subject)
+                    const result = await mailgun(settings.emailSettings.mailgun,{text, html, subject, to});
+                    resolve({message: 'Email sent', result});
                 // Add other email providers here
                 // case 'sendgrid':
                 //     from = settings.emailSettings?.sendgrid?.SENDGRID_FROM_EMAIL;
@@ -218,11 +224,33 @@ async function onSignupUser(req: httpRequest, res: httpResponse, payload: any) {
         if (settings.onSignupUser) {
             settings.onSignupUser(req, res, {access_token: token, user: signupData})
         } else if (settings.useCookie) {
-            setAuthCookies(res, token, refreshToken);
+            setAuthCookies(res, token, refreshToken, settings);
         }
-          
-        console.debug('Signup Redirecting to', `${settings.redirectSuccessUrl}#access_token=${token}&signup=true`)
-        //res.redirect(302, `${settings.redirectSuccessUrl}#access_token=${token}&signup=true`)
+        const emailData = {
+            subject: 'Welcome to ProductX',
+            to: payload.email,
+            title: 'Welcome to ProductX',
+            productName: 'ProductX',
+            productUrl: settings.baseUrl,
+            name: signupData.name || signupData.email,
+            action_text: 'Activate your account',
+            action_url: `${settings.baseUrl}`,
+            companyName: 'My company',
+            companyAddress: '123 Main St, Anytown, USA',
+            companySuite: '12345',
+            support_email: 'support@myapp.com',
+            live_chat_url: 'https://myapp.com/livechat',
+            help_url: 'https://myapp.com/help',
+            login_url: `${settings.baseUrl}/auth/login`,
+            username: signupData.email,            
+            senderName: 'Jane'
+        }
+        const html = emailTemplateWelcome(emailData)
+        const text = emailTemplateWelcomeText(emailData)
+        const subject = emailData.subject;
+        const to = emailData.to;
+        console.debug('Sending email to', to, html, text, subject)
+        await mailgun(settings.emailSettings.mailgun,{text, html, subject, to});
         resolve({ token, refreshToken })
     })  
 }
@@ -240,7 +268,7 @@ async function onLoginUser(req: httpRequest, res: httpResponse, payload: any) {
             if (settings.onLoginUser) {
                 settings.onLoginUser(req, res, {access_token: token, user: aUser})
             } else if (settings.useCookie) {
-                setAuthCookies(res, token, refreshToken);
+                setAuthCookies(res, token, refreshToken, settings);
             }
             await db.updateOne(settings.userCollection, { email: payload.email }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })  
             console.debug('Github login Redirecting to', `${settings.redirectSuccessUrl}#access_token=${token}&login=true`)
