@@ -136,6 +136,7 @@ The `settings` object allows you to configure various aspects of the authenticat
 - Default configuration:
 ```javascript
 {
+    baseUrl: 'http://localhost:3000', // Your app's base URL
     userCollection: 'users',
     saltRounds: 10,
     JWT_ACCESS_TOKEN_SECRET: process.env.JWT_ACCESS_TOKEN_SECRET,
@@ -145,23 +146,36 @@ The `settings` object allows you to configure various aspects of the authenticat
     redirectSuccessUrl: '/',
     redirectFailUrl: '/',
     useCookie: true,
-    baseAPIRoutes: '/myapi',
+    baseAPIRoutes: '/',
     emailProvider: 'none',
     labels: {
         signinTitle: 'Sign in',
         signupTitle: 'Sign up',
+        forgotTitle: 'Forgot password',
         otpTitle: 'OTP'
     }
 }
 ```
 
-### Email Configuration
-The email configuration has been updated to support multiple providers. Currently supports:
-- Mailgun
-- Postmark (coming soon)
-- SendGrid (coming soon)
+### Event Callbacks
+You can provide callback functions to handle authentication events:
 
-Example configuration:
+```javascript
+{
+    onLoginUser: (req, res, payload) => {
+        // Called after successful login
+        // payload contains: { access_token, user }
+    },
+    onSignupUser: (req, res, payload) => {
+        // Called after successful signup
+        // payload contains: { access_token, user }
+    }
+}
+```
+
+### Email Configuration
+The email configuration supports multiple providers:
+
 ```javascript
 {
     emailProvider: 'mailgun', // 'mailgun' | 'postmark' | 'sendgrid' | 'none'
@@ -172,19 +186,29 @@ Example configuration:
             MAILGUN_FROM_EMAIL: process.env.MAILGUN_FROM_EMAIL,
             MAILGUN_FROM_NAME: process.env.MAILGUN_FROM_NAME
         }
-        // Additional provider configs will go here
+        // Support for additional providers coming soon:
+        // postmark: { ... }
+        // sendgrid: { ... }
     }
 }
 ```
 
-### UI Customization
-You can customize the authentication UI labels:
+### OAuth Configuration
+For social login support:
+
 ```javascript
 {
-    labels: {
-        signinTitle: 'Custom Sign In',
-        signupTitle: 'Custom Sign Up',
-        otpTitle: 'Enter Code'
+    google: {
+        CLIENT_ID: process.env.CLIENT_ID,
+        CLIENT_SECRET: process.env.CLIENT_SECRET,
+        REDIRECT_URI: 'https://{YOUR_APP_URL}.codehooks.io/auth/oauthcallback/google',
+        SCOPE: ['email', 'profile'] // Optional
+    },
+    github: {
+        CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+        CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+        REDIRECT_URI: 'https://{YOUR_APP_URL}.codehooks.io/auth/oauthcallback/github',
+        SCOPE: ['user:email'] // Optional
     }
 }
 ```
