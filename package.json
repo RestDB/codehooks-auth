@@ -1,6 +1,6 @@
 {
   "name": "codehooks-auth",
-  "version": "0.0.9",
+  "version": "1.0.0",
   "description": "Codehooks auth lib",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
