@@ -4,8 +4,7 @@ import cookie from 'cookie';
 import ms from 'ms';
 import { AuthStrategy } from '../types';
 import { Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
-import { from } from 'form-data';
-import { sign } from 'crypto';
+import { setAuthCookies } from '../lib';
 
 /**
  * OTP authentication strategy
@@ -26,6 +25,7 @@ export const otpAuth: AuthStrategy = {
         cohoApp.post('/auth/otp', otpAuth.login)
         cohoApp.auth('/auth/otp/verify', (req, res, next) => next()) // allow public access to otp verify
         cohoApp.post('/auth/otp/verify', otpAuth.verify)
+        cohoApp.get('/auth/otp/verify', otpAuth.verify)
     },
 
     login: async (req: httpRequest, res: httpResponse) => {
@@ -38,9 +38,10 @@ export const otpAuth: AuthStrategy = {
             //console.log('login route', username, password)
             console.log('Login Request', req)
             if (signup && signup === 'true') {                
-                await otpAuth.onSignupUser(req, res, { email: username, ...req.body })
+                await otpAuth.onSignupUser(req, res, { email: username, ...req.body, otp: otpCode })
             } else {
-                await otpAuth.sendOTPMail({to: username, otp: otpCode});
+                const aUser = await db.getOne(otpAuth.settings.userCollection, { email: username })
+                await otpAuth.sendOTPMail({to: username, otp: otpCode});                
             }            
             
             console.debug('otpCode', otpCode)
@@ -57,9 +58,13 @@ export const otpAuth: AuthStrategy = {
     },
 
     verify: async (req: httpRequest, res: httpResponse) => {
-        const { email, otp } = req.body;
+        let { email, otp } = req.body;
+        if (req.method === 'GET') {
+            email = req.query.email;
+            otp = req.query.otp;
+        }
         const db = await Datastore.open()
-        console.debug('verify otp', req.body)
+        console.debug('verify otp', otp, email)
         const otpCode = await db.get(`otp:${email}`);
         console.debug('otpCode', otpCode);
         if (otpCode !== otp) {
@@ -70,38 +75,23 @@ export const otpAuth: AuthStrategy = {
         console.log('aUser', aUser)
 
         if (aUser) {
-            const loginData = await db.updateOne(otpAuth.settings.userCollection, { email: email }, { $set: { lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
-            // Generate a 6-digit OTP code
+            const activate = await db.get(`activate-otp:${email}`, otp)
+            const isActive = aUser.active || (activate ? true : false)
+            const loginData = await db.updateOne(otpAuth.settings.userCollection, { email: email }, { $set: {active: isActive, lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })
+            // generate token
             const token = jwt.sign({ email: email, id: loginData._id }, otpAuth.settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: otpAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
             const refreshToken = jwt.sign({ email: email, id: loginData._id }, otpAuth.settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: otpAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
             console.log('otpAuth token', otpAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE, token)
             if (otpAuth.settings.useCookie) {
-                const refreshTokenCookie = cookie.serialize('refresh-token', refreshToken, {
-                    sameSite: "none",
-                    path: '/auth/refreshtoken',
-                    secure: true,
-                    httpOnly: true,
-                    maxAge: Number(ms(otpAuth.settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE)) / 1000 // 8 days
-                });
-
-                const accessTokenCookie = cookie.serialize('access-token', token, {
-                    sameSite: "none",
-                    path: '/',
-                    secure: true,
-                    httpOnly: true,
-                    maxAge: Number(ms(otpAuth.settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE)) / 1000 // 15 minutes from now
-                });
-
-                res.setHeader('Set-Cookie', [refreshTokenCookie, accessTokenCookie]);
-                console.log('PW redir', otpAuth.settings.redirectSuccessUrl)
-
+                setAuthCookies(res, token, refreshToken, otpAuth.settings)                
                 if (otpAuth.settings.onAuthUser) {
                     otpAuth.settings.onAuthUser(req, res, { access_token: token, user: loginData, redirectURL: otpAuth.settings.redirectSuccessUrl, method: "PASSWORD" })
                 } else {
-                    //res.json({"access_token": token, redirectURL: otpAuth.settings.redirectSuccessUrl})
-                    console.debug('OTP Redirecting to', `${otpAuth.settings.redirectSuccessUrl}#access_token=${token}`)
-                    //res.redirect(302, `${otpAuth.settings.redirectSuccessUrl}#access_token=${token}`)                
-                    res.json({ redirectURL: `${otpAuth.settings.redirectSuccessUrl}#access_token=${token}` })
+                    if (req.method === 'GET') {
+                        res.redirect(302, `${otpAuth.settings.redirectSuccessUrl}#access_token=${token}`)
+                    } else {
+                        res.json({ redirectURL: `${otpAuth.settings.redirectSuccessUrl}#access_token=${token}` })
+                    }
                 }
             } else {
                 // no user

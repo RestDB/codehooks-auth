@@ -69,8 +69,9 @@ export const getJwtForAccessToken = async (req: httpRequest, res: httpResponse, 
 
 // Verify access token middleware
 export const verifyAccessToken = (settings: AuthSettings) => {
-    return function(req: httpRequest, res: httpResponse, next: nextFunction) {
+    return async function(req: httpRequest, res: httpResponse, next: nextFunction) {
         try {
+            const db = await Datastore.open();
             let token = getTokenFromAuthorizationHeader(req.headers['authorization'])
             if (req.headers.cookie) {
                 const cookies = cookie.parse(req.headers.cookie);
@@ -79,13 +80,20 @@ export const verifyAccessToken = (settings: AuthSettings) => {
             if (token) {
                 try {
                     const decoded = jwt.verify(token, settings.JWT_ACCESS_TOKEN_SECRET);
-                    req.headers['x-jwt-decoded'] = decoded;
-                    console.debug('verified access token', req.headers['x-jwt-decoded'])
+                    req.headers['x-jwt-decoded'] = decoded;                    
+                    console.debug('lookup user', { email: decoded.email, active: true })
+                    const aUser = await db.getOne(settings.userCollection, { email: decoded.email, active: true });
+                    console.debug('verified access token', decoded, aUser);
                     next()
                 } catch (error) {
+                    console.error('verifyAccessToken', error)
                     if (error.name === "TokenExpiredError") {
                         return next("Token lifetime exceeded!")               
-                    }        
+                    }
+                    
+                    if (error.error) {
+                        return next(error.error)
+                    }                    
                     next(error);
                 }
             } else {

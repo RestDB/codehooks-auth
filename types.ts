@@ -1,4 +1,5 @@
 import { app, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
+import handlebars from 'handlebars';
 
 export interface AuthStrategy {
     settings: any,
@@ -24,6 +25,7 @@ export type AuthSettings = {
     redirectFailUrl?: string,
     useCookie?: boolean,
     baseAPIRoutes?: string,
+    defaultUserActive?: boolean,
     google?: {
         CLIENT_ID: string,
         CLIENT_SECRET: string,
@@ -55,11 +57,49 @@ export type AuthSettings = {
             POSTMARK_FROM_NAME: string
         }
     },
+    emailSignupData?: {
+        subject: string,
+        title: string,
+        productName: string,
+        productUrl: string,
+        companyName: string,
+        companyAddress: string,
+        companySuite: string,
+        support_email: string,
+        live_chat_url: string,
+        help_url: string,
+        login_url: string,
+        senderName: string
+    },
+    emailOTPData?: {
+        subject: string,
+        title: string,
+        productName: string,
+        productUrl: string,
+        companyName: string,
+        companyAddress: string,
+        companySuite: string,
+        support_email: string,
+        live_chat_url: string,
+        help_url: string,
+        login_url: string,
+        senderName: string
+    },
     labels?: {
         signinTitle?: string,
         signupTitle?: string,
         forgotTitle?: string,
         otpTitle?: string
+    },
+    templateLoaders?: {
+        layout?: () => Function;
+        login?: () => Function;
+        otp?: () => Function;
+        signup?: () => Function;
+        emailTemplateWelcome?: () => Function;
+        emailTemplateWelcomeText?: () => Function;
+        emailTemplateOTP?: () => Function;
+        emailTemplateOTPText?: () => Function;
     },
     onLoginUser?: (req:httpRequest, res:httpResponse, payload: any) => void,
     onSignupUser?: (req:httpRequest, res:httpResponse, payload: any) => void

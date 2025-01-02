@@ -145,7 +145,7 @@ export const googleAuth: AuthStrategy = {
                     }                     
                 } catch (ex) {
                     console.error(ex)
-                    res.status(500).end('Error getting profile')
+                    res.redirect(302, `${googleAuth.settings.redirectFailUrl}#error=${ex.error}`) 
                 }               
 
             }

@@ -1,16 +1,17 @@
 # codehooks-auth
-Open source client app authentication for Codehooks.io REST API backends. 
+Open source authentication library for Codehooks.io REST API backends. 
 
-**codehooks-auth** is a library that provides easy-to-use authentication functionality for Codehooks.io REST API backends. It supports various authentication methods, including one time password authentication and OAuth (Google and Github).
+**codehooks-auth** is a library that provides easy-to-use authentication functionality for Codehooks.io REST API backends (and any client side web app). It supports various authentication methods, including one time password authentication and OAuth (Google and Github).
 
 The **codehooks-auth** library aims to provide a simple and easy to use alternative for those who prefer not to use commercial providers or for those who need more control over the authentication process.
 
->Note: Codehooks.io supports leading JWT based authentication providers like [Auth0.com](https://auth0.com) and [Clerk.com](https://clerk.com). 
+>Note: Codehooks.io also supports leading JWT based authentication providers like [Auth0.com](https://auth0.com) and [Clerk.com](https://clerk.com). 
 
 
 ## Features
 
 - Easy integration with Codehooks.io apps
+- Easy integration with any client side web app
 - Support for one time password authentication
 - OAuth support (Google and Github)
 - JWT-based access and refresh tokens
@@ -18,7 +19,7 @@ The **codehooks-auth** library aims to provide a simple and easy to use alternat
 - Static asset serving for auth-related pages
 - Configurable caching for static assets
 
-Check out the [live demo example](https://trustworthy-summit-721c.codehooks.io/index.html).
+Check out the React app [live demo example](https://fortuitous-expanse-a616.codehooks.io). Source code is available at Github [here](https://github.com/codehooks-io/codehooks-auth-example-react).
 
 ## Installation
 To install codehooks-auth, use npm:
@@ -104,7 +105,7 @@ The screenshot below shows the one time password screen presented to the users.
 
 ![lock-screen](./examples/images/otp-screen.png)
 
-If your app `redirectSuccessUrl` is `https://example.com/dashboard.html` then after login you will be redirected to this URL. And, a httpOnly cookie will be set with the access_token and a refresh_token. This makes it very simple to call your Codehooks.io API.
+If your app `redirectSuccessUrl` is `https://example.com/dashboard` then after login you will be redirected to this URL. And, a httpOnly cookie will be set with the access_token and a refresh_token. This makes it very simple to call your Codehooks.io API.
 
 Call your Codehooks.io API with the implicit access_token in the url hash or the httpOnly cookie.
 
@@ -124,6 +125,7 @@ _ToDo: Provide a complete client side JavaScript that handles access token, and 
 You can manage your users with the codehooks-cli tool or the web ui. 
 
 The easiest way to get started is to add a user with the Studio app as shown in the screenshot below.
+> Add propery `"active": true` or `"active": false` to set the user active or inactive.
 
 ![add-user](./examples/images/users.png)
 
@@ -137,8 +139,8 @@ The `settings` object allows you to configure various aspects of the authenticat
 ```javascript
 {
     baseUrl: 'http://localhost:3000', // Your app's base URL
-    userCollection: 'users',
-    saltRounds: 10,
+    userCollection: 'users', // Database collection for users
+    saltRounds: 10, // Number of salt rounds for hashing
     JWT_ACCESS_TOKEN_SECRET: process.env.JWT_ACCESS_TOKEN_SECRET,
     JWT_ACCESS_TOKEN_SECRET_EXPIRE: '15m',
     JWT_REFRESH_TOKEN_SECRET: process.env.JWT_REFRESH_TOKEN_SECRET,
@@ -147,6 +149,7 @@ The `settings` object allows you to configure various aspects of the authenticat
     redirectFailUrl: '/',
     useCookie: true,
     baseAPIRoutes: '/',
+    defaultUserActive: false, // Whether new users are active by default
     emailProvider: 'none',
     labels: {
         signinTitle: 'Sign in',
@@ -185,10 +188,46 @@ The email configuration supports multiple providers:
             MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN,
             MAILGUN_FROM_EMAIL: process.env.MAILGUN_FROM_EMAIL,
             MAILGUN_FROM_NAME: process.env.MAILGUN_FROM_NAME
+        },
+        sendgrid: {
+            SENDGRID_APIKEY: process.env.SENDGRID_APIKEY,
+            SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL,
+            SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME
+        },
+        postmark: {
+            POSTMARK_APIKEY: process.env.POSTMARK_APIKEY,
+            POSTMARK_FROM_EMAIL: process.env.POSTMARK_FROM_EMAIL,
+            POSTMARK_FROM_NAME: process.env.POSTMARK_FROM_NAME
         }
-        // Support for additional providers coming soon:
-        // postmark: { ... }
-        // sendgrid: { ... }
+    }
+}
+```
+
+### Template Customization
+You can customize the authentication templates:
+
+```javascript
+{
+    templateLoaders: {
+        layout: () => Function, // Custom layout template
+        login: () => Function, // Custom login template
+        otp: () => Function, // Custom OTP template
+        signup: () => Function, // Custom signup template
+        emailTemplateWelcome: () => Function, // Custom welcome email template
+        emailTemplateWelcomeText: () => Function, // Custom welcome email text template
+        emailTemplateOTP: () => Function, // Custom OTP email template
+        emailTemplateOTPText: () => Function // Custom OTP email text template
+    }
+}
+```
+
+When providing custom template loaders, any unspecified loaders will retain their default implementations. For example:
+
+```javascript
+{
+    templateLoaders: {
+        // Only override the layout template
+        layout: () => handlebars.compile(require('../auth/assets/custom-layout.hbs'))
     }
 }
 ```
@@ -213,34 +252,68 @@ For social login support:
 }
 ```
 
-### Authentication API routes
-These are the routes that are used by the client web app to authenticate users. The routes are automatically created by the `initAuth` function.
+#### GitHub Setup
+
+1. Go to https://github.com/settings/developers
+2. Click "New OAuth App"
+3. Fill in the application details:
+   - Application name: [Your App Name]
+   - Homepage URL: http://localhost:3000 (for development)
+   - Authorization callback URL: http://localhost:3000/api/auth/callback/github
+
+Save your Client ID and Client Secret for later configuration.
+
+#### Google Setup
+
+1. Go to https://console.cloud.google.com/
+2. Create a new project or select an existing one
+3. Navigate to "APIs & Services" > "Credentials"
+4. Click "Configure Consent Screen"
+   - Select "External" user type
+   - Fill in required app information (name, email, etc.)
+   - Add necessary scopes (typically email and profile)
+   - Add test users if needed
+5. Return to Credentials page and click "Create Credentials" > "OAuth 2.0 Client ID"
+   - Application type: Web application
+   - Name: [Your App Name]
+   - Authorized JavaScript origins: http://localhost:3000 or your app url
+   - Authorized redirect URIs: http://localhost:3000/api/auth/callback/google or your app url
+6. Click "Create"
+
+Save your Client ID and Client Secret for later configuration.
+
+### Authentication API Routes
+These are the routes automatically created by the `initAuth` function:
 
 #### Core Auth Routes
 - `/auth/login` - Main login page (GET)
 - `/auth/signup` - Signup page (GET)
-- `/auth/logout` - Logout endpoint (GET)
+- `/auth/logout` - Logout endpoint, clears auth cookies (GET)
 - `/auth/accesstoken` - Get JWT from access token (POST)
-- `/auth/refreshtoken` - Refresh access token (POST)
+- `/auth/refreshtoken` - Refresh expired access token (POST)
+- `/auth/activate/:token` - Account activation endpoint (GET)
+- `/auth/forgot` - Forgot password page (GET) (Currently returns "Not implemented")
 
 #### OTP (One-Time Password) Routes
 - `/auth/otp` - OTP login page (GET)
 - `/auth/otp` - Send OTP code (POST)
 - `/auth/otp/verify` - Verify OTP code (POST)
 
-#### Google OAuth Routes
-- `/auth/login/google` - Initiate Google OAuth login (GET)
-- `/auth/signup/google` - Initiate Google OAuth signup (GET)
-- `/auth/oauthcallback/google` - Google OAuth callback (GET)
+#### OAuth Routes
+When configured, the following OAuth routes are available:
 
-#### GitHub OAuth Routes
-- `/auth/login/github` - Initiate GitHub OAuth login (GET)
-- `/auth/signup/github` - Initiate GitHub OAuth signup (GET)
-- `/auth/oauthcallback/github` - GitHub OAuth callback (GET)
+Google:
+- `/auth/login/google` - Initiate Google OAuth login
+- `/auth/signup/google` - Initiate Google OAuth signup
+- `/auth/oauthcallback/google` - Google OAuth callback
 
-#### Additional Routes
-- `/auth/forgot` - Forgot password page (GET) (Currently returns "Not implemented")
-- `/auth/*` - Static asset serving for auth-related files
+GitHub:
+- `/auth/login/github` - Initiate GitHub OAuth login
+- `/auth/signup/github` - Initiate GitHub OAuth signup  
+- `/auth/oauthcallback/github` - GitHub OAuth callback
+
+#### Static Assets
+- `/auth/*` - Serves static assets for auth-related files from the `/auth/assets` directory
 
 ## Refresh Token
 

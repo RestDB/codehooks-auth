@@ -7,7 +7,7 @@ if (process.env.INIT_CWD !== process.cwd()) {
 
   fs.copySync(sourceDir, targetDir, {
     filter: (src) => {
-      return src.endsWith('.css') || src.endsWith('.js') || src.endsWith('.ico') || !path.extname(src);
+      return src.endsWith('.hbs') || src.endsWith('.css') || src.endsWith('.js') || src.endsWith('.ico') || src.endsWith('.svg') || !path.extname(src);
     }
   });
 }
