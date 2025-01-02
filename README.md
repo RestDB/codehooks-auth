@@ -28,11 +28,19 @@ To install codehooks-auth, use npm:
 npm install codehooks-auth codehooks-js
 ```
 
-The install script will create a folder in your project `/auth/assets` with the client side assets and JavaScript used by the lock screen.
+The install script will create a folder in your project `/auth/assets` with the client side assets and JavaScript used by the lock screen. In addition, all handlebars templates are provided for optional customization. See the [Template Customization](#template-customization) section for more details.
 
 ```
-auth
-└── assets
+auth/
+└── assets/
+    ├── emailTemplateOTP.hbs
+    ├── emailTemplateOTPText.hbs
+    ├── emailTemplateWelcome.hbs
+    ├── emailTemplateWelcomeText.hbs
+    ├── layout.hbs
+    ├── login.hbs
+    ├── otp.hbs
+    ├── signup.hbs
     ├── favicon.ico
     ├── otp.js
     ├── signin.js
