@@ -133,7 +133,7 @@ _ToDo: Provide a complete client side JavaScript that handles access token, and 
 You can manage your users with the codehooks-cli tool or the web ui. 
 
 The easiest way to get started is to add a user with the Studio app as shown in the screenshot below.
-> Add propery `"active": true` or `"active": false` to set the user active or inactive.
+> Add a property `"active": true` or `"active": false` to set a user as _active_ or _inactive_.
 
 ![add-user](./examples/images/users.png)
 
@@ -148,7 +148,6 @@ The `settings` object allows you to configure various aspects of the authenticat
 {
     baseUrl: 'http://localhost:3000', // Your app's base URL
     userCollection: 'users', // Database collection for users
-    saltRounds: 10, // Number of salt rounds for hashing
     JWT_ACCESS_TOKEN_SECRET: process.env.JWT_ACCESS_TOKEN_SECRET,
     JWT_ACCESS_TOKEN_SECRET_EXPIRE: '15m',
     JWT_REFRESH_TOKEN_SECRET: process.env.JWT_REFRESH_TOKEN_SECRET,
@@ -168,24 +167,35 @@ The `settings` object allows you to configure various aspects of the authenticat
 }
 ```
 
-### Event Callbacks
-You can provide callback functions to handle authentication events:
+### Event Hooks
+On the Settings object you can provide functions to handle authentication events. The example below shows how to check if the user is allowed to login.
 
 ```javascript
 {
-    onLoginUser: (req, res, payload) => {
+    onLoginUser: (req, res, data) => {
         // Called after successful login
-        // payload contains: { access_token, user }
+        const { user } = data;
+        const allowedEmails = ['joe@example.com', 'jane@example.com']; // Add your allowed emails here        
+        if (!allowedEmails.includes(user.email)) {
+          throw new Error('User not allowed to login');
+        }
+      }
     },
-    onSignupUser: (req, res, payload) => {
+    onSignupUser: (req, res, data) => {
         // Called after successful signup
-        // payload contains: { access_token, user }
+        console.log('onSignupUser', data)
     }
 }
 ```
 
 ### Email Configuration
-The email configuration supports multiple providers:
+The library supports multiple email providers for sending authentication-related emails (like OTP codes and welcome emails). Currently supported providers are:
+
+- Mailgun
+- Postmark
+- SendGrid (coming soon)
+
+Configure your email provider in the settings:
 
 ```javascript
 {
@@ -196,49 +206,74 @@ The email configuration supports multiple providers:
             MAILGUN_DOMAIN: process.env.MAILGUN_DOMAIN,
             MAILGUN_FROM_EMAIL: process.env.MAILGUN_FROM_EMAIL,
             MAILGUN_FROM_NAME: process.env.MAILGUN_FROM_NAME
-        },
-        sendgrid: {
-            SENDGRID_APIKEY: process.env.SENDGRID_APIKEY,
-            SENDGRID_FROM_EMAIL: process.env.SENDGRID_FROM_EMAIL,
-            SENDGRID_FROM_NAME: process.env.SENDGRID_FROM_NAME
-        },
+        }
+        /*
         postmark: {
             POSTMARK_APIKEY: process.env.POSTMARK_APIKEY,
-            POSTMARK_FROM_EMAIL: process.env.POSTMARK_FROM_EMAIL,
-            POSTMARK_FROM_NAME: process.env.POSTMARK_FROM_NAME
-        }
+            POSTMARK_FROM_EMAIL: 'jones@codehooks.io',
+            POSTMARK_FROM_NAME: 'Coho man'
+        }*/
+    },
+    // Customize email content
+    emailSignupData: {
+        subject: 'Welcome to Example',
+        title: 'Welcome to Example',
+        productName: 'Example',
+        productUrl: 'https://example.com',
+        companyName: 'Example',
+        companyAddress: '123 Main St',
+        companySuite: '12345',
+        support_email: 'support@example.com',
+        live_chat_url: 'https://example.com/chat',
+        help_url: 'https://example.com/help',
+        login_url: 'https://example.com/login',
+        senderName: 'Example Team'
+    },
+    emailOTPData: {
+        // Same fields as emailSignupData for OTP emails
     }
 }
 ```
 
 ### Template Customization
-You can customize the authentication templates:
+The library uses Handlebars templates for all authentication pages and emails. You can customize these templates like this:
+
+1. **Edit the Default Templates**
+   After installation, the default templates are copied to your project's `/auth/assets` directory:
+   ```
+   auth/assets/
+   ├── emailTemplateOTP.hbs         # OTP email (HTML)
+   ├── emailTemplateOTPText.hbs     # OTP email (plain text)
+   ├── emailTemplateWelcome.hbs     # Welcome email (HTML)
+   ├── emailTemplateWelcomeText.hbs # Welcome email (plain text)
+   ├── layout.hbs                   # Main layout template
+   ├── login.hbs                    # Login page
+   ├── otp.hbs                      # OTP verification page
+   └── signup.hbs                   # Signup page
+   ```
+
+2. **Provide Custom Template Loaders**
+   Override specific templates by providing custom template loader functions:
 
 ```javascript
 {
     templateLoaders: {
-        layout: () => Function, // Custom layout template
-        login: () => Function, // Custom login template
-        otp: () => Function, // Custom OTP template
-        signup: () => Function, // Custom signup template
-        emailTemplateWelcome: () => Function, // Custom welcome email template
-        emailTemplateWelcomeText: () => Function, // Custom welcome email text template
-        emailTemplateOTP: () => Function, // Custom OTP email template
-        emailTemplateOTPText: () => Function // Custom OTP email text template
+        // Override just the templates you want to customize
+        login: () => handlebars.compile(require('./custom/login.hbs')),
+        emailTemplateWelcome: () => handlebars.compile(require('./custom/welcome.hbs'))
     }
 }
 ```
 
-When providing custom template loaders, any unspecified loaders will retain their default implementations. For example:
-
-```javascript
-{
-    templateLoaders: {
-        // Only override the layout template
-        layout: () => handlebars.compile(require('../auth/assets/custom-layout.hbs'))
-    }
-}
-```
+Available template customization options:
+- `layout`: Main layout template
+- `login`: Login page
+- `otp`: OTP verification page
+- `signup`: Signup page
+- `emailTemplateWelcome`: Welcome email (HTML)
+- `emailTemplateWelcomeText`: Welcome email (plain text)
+- `emailTemplateOTP`: OTP email (HTML)
+- `emailTemplateOTPText`: OTP email (plain text)
 
 ### OAuth Configuration
 For social login support:

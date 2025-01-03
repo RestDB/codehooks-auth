@@ -152,12 +152,7 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
         cohoApp.auth(`${settings.baseAPIRoutes}/*`, verifyAccessToken(settings))
         
         // serve lock screens
-        cohoApp.get('/auth/login', async (req: httpRequest, res: httpResponse) =>{
-            console.debug('app settings', settings.templateLoaders)
-            // Add property name logging
-            Object.keys(settings.templateLoaders).forEach(key => {
-                console.debug(`Template loader: ${key}`);
-            });
+        cohoApp.get('/auth/login', async (req: httpRequest, res: httpResponse) =>{           
             const hasSocial = settings.github || settings.google;
             const body = settings.templateLoaders.login()({
                 signinTitle: settings.labels.signinTitle,
