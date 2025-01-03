@@ -288,6 +288,7 @@ async function sendOTPMail(content: Object): Promise<any> {
                     console.debug('Sending email to', to, html, text, subject)
                     const mgresult = await mailgun(settings.emailSettings.mailgun,{text, html, subject, to});
                     resolve({message: 'Email sent', mgresult});
+                    break;
                 case 'postmark':
                     const pmresult = await sendMailPostmark(settings.emailSettings.postmark, {
                         to: emailData.to,
@@ -363,7 +364,8 @@ async function onSignupUser(req: httpRequest, res: httpResponse, payload: any) {
         const refreshToken = jwt.sign({ email: payload.email, id: signupData._id }, settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
         if (settings.onSignupUser) {
             settings.onSignupUser(req, res, {access_token: token, user: signupData})
-        } else if (settings.useCookie) {
+        } 
+        if (settings.useCookie) {
             setAuthCookies(res, token, refreshToken, settings);
         }
         const emailData = {
@@ -418,19 +420,23 @@ async function onLoginUser(req: httpRequest, res: httpResponse, payload: any) {
         const db = await Datastore.open();
         try {
             const aUser = await db.getOne(settings.userCollection, { email: payload.email })
-            console.debug('onLoginUser', aUser)
             const token = jwt.sign({ email: aUser.email, id: aUser._id }, settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
             const refreshToken = jwt.sign({ email: aUser.email, id: aUser._id }, settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
-            console.log('Github access token', settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE, token)
             if (settings.onLoginUser) {
-                settings.onLoginUser(req, res, {access_token: token, user: aUser})
-            } else if (settings.useCookie) {
+                try {
+                    settings.onLoginUser(req, res, {access_token: token, user: aUser})
+                } catch (error) {
+                    console.error('Error in onLoginUser override', error)
+                    reject({error: error.message})
+                }
+            } 
+            if (settings.useCookie) {
                 setAuthCookies(res, token, refreshToken, settings);
             }
             await db.updateOne(settings.userCollection, { email: payload.email }, { $set: { lastLogin: new Date().toISOString(), ...payload }, $inc: { "success": 1 } })              
             resolve({ token, refreshToken })
         } catch (error) {
-            console.error('onLoginUser', error)
+            console.error('Error in onLoginUser', error)
             reject({error: error.message})
         }
     })

@@ -41,6 +41,15 @@ export const otpAuth: AuthStrategy = {
                 await otpAuth.onSignupUser(req, res, { email: username, ...req.body, otp: otpCode })
             } else {
                 const aUser = await db.getOne(otpAuth.settings.userCollection, { email: username })
+                if (otpAuth.settings.onLoginUser) {
+                    try {
+                        otpAuth.settings.onLoginUser(req, res, {access_token: otpCode, user: aUser})
+                    } catch (error) {
+                        console.error('Error in onLoginUser otpAuth override', error)
+                        res.status(401).json({ redirectURL: `${otpAuth.settings.redirectFailUrl}#error=${error.message}` })
+                    }
+                } 
+                
                 await otpAuth.sendOTPMail({to: username, otp: otpCode});                
             }            
             
@@ -75,6 +84,14 @@ export const otpAuth: AuthStrategy = {
         console.log('aUser', aUser)
 
         if (aUser) {
+            if (otpAuth.settings.onLoginUser) {
+                try {
+                    otpAuth.settings.onLoginUser(req, res, {access_token: otpCode, user: aUser})
+                } catch (error) {
+                    console.error('Error in onLoginUser otpAuth override', error)
+                    res.status(401).json({ redirectURL: `${otpAuth.settings.redirectFailUrl}#error=${error.message}` })
+                }
+            }
             const activate = await db.get(`activate-otp:${email}`, otp)
             const isActive = aUser.active || (activate ? true : false)
             const loginData = await db.updateOne(otpAuth.settings.userCollection, { email: email }, { $set: {active: isActive, lastLogin: new Date().toISOString() }, $inc: { "success": 1 } })

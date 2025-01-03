@@ -144,7 +144,7 @@ export const googleAuth: AuthStrategy = {
                         res.redirect(302, `${googleAuth.settings.redirectSuccessUrl}#access_token=${token}&refresh_token=${refreshToken}&login=true`)     
                     }                     
                 } catch (ex) {
-                    console.error(ex)
+                    console.error('Error in googleAuth.callback', ex.message)
                     res.redirect(302, `${googleAuth.settings.redirectFailUrl}#error=${ex.error}`) 
                 }               
 
