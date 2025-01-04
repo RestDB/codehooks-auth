@@ -133,7 +133,8 @@ _ToDo: Provide a complete client side JavaScript that handles access token, and 
 You can manage your users with the codehooks-cli tool or the web ui. 
 
 The easiest way to get started is to add a user with the Studio app as shown in the screenshot below.
-> Add a property `"active": true` or `"active": false` to set a user as _active_ or _inactive_.
+
+> Note: Add a property `"active": true` or `"active": false` to set a user as _active_ or _inactive_.
 
 ![add-user](./examples/images/users.png)
 
@@ -146,7 +147,7 @@ The `settings` object allows you to configure various aspects of the authenticat
 - Default configuration:
 ```javascript
 {
-    baseUrl: 'http://localhost:3000', // Your app's base URL
+    baseUrl: 'https://{YOUR_APP_URL}.codehooks.io', // Or, your app's base URL https://example.com
     userCollection: 'users', // Database collection for users
     JWT_ACCESS_TOKEN_SECRET: process.env.JWT_ACCESS_TOKEN_SECRET,
     JWT_ACCESS_TOKEN_SECRET_EXPIRE: '15m',
@@ -172,19 +173,18 @@ On the Settings object you can provide functions to handle authentication events
 
 ```javascript
 {
-    onLoginUser: (req, res, data) => {
-        // Called after successful login
-        const { user } = data;
-        const allowedEmails = ['joe@example.com', 'jane@example.com']; // Add your allowed emails here        
-        if (!allowedEmails.includes(user.email)) {
-          throw new Error('User not allowed to login');
-        }
+    onLoginUser: async (req, res, data) => {
+    const { user } = data;
+    const allowedEmails = ['jane@example.com', 'joe@example.com']; // Add your allowed emails here
+
+    return new Promise((resolve, reject) => {
+      if (!allowedEmails.includes(user.email)) {
+        console.error('User not allowed to login');
+        reject('User not allowed to login');
       }
-    },
-    onSignupUser: (req, res, data) => {
-        // Called after successful signup
-        console.log('onSignupUser', data)
-    }
+      resolve();
+    });
+  }
 }
 ```
 
@@ -236,10 +236,10 @@ Configure your email provider in the settings:
 ```
 
 ### Template Customization
-The library uses Handlebars templates for all authentication pages and emails. You can customize these templates like this:
+The library uses Handlebars templates for all authentication pages and emails. You can customize these templates in two ways:
 
 1. **Edit the Default Templates**
-   After installation, the default templates are copied to your project's `/auth/assets` directory:
+   After installation, the default templates are automatically copied to your project's `/auth/assets` directory:
    ```
    auth/assets/
    ├── emailTemplateOTP.hbs         # OTP email (HTML)
@@ -249,31 +249,37 @@ The library uses Handlebars templates for all authentication pages and emails. Y
    ├── layout.hbs                   # Main layout template
    ├── login.hbs                    # Login page
    ├── otp.hbs                      # OTP verification page
-   └── signup.hbs                   # Signup page
+   ├── signup.hbs                   # Signup page
+   ├── favicon.ico                  # Favicon
+   ├── otp.js                      # OTP page JavaScript
+   ├── signin.js                   # Login/Signup page JavaScript  
+   └── styles.css                  # Shared styles
    ```
 
-2. **Provide Custom Template Loaders**
-   Override specific templates by providing custom template loader functions:
+2. **Override Templates Programmatically**
+   You can override specific templates by providing custom template loader functions in your settings:
 
-```javascript
-{
-    templateLoaders: {
-        // Override just the templates you want to customize
-        login: () => handlebars.compile(require('./custom/login.hbs')),
-        emailTemplateWelcome: () => handlebars.compile(require('./custom/welcome.hbs'))
-    }
-}
-```
+   ```javascript
+   import handlebars from 'handlebars';
+   
+   const settings = {
+     templateLoaders: {
+       // Override just the templates you want to customize
+       login: () => handlebars.compile(require('./custom/login.hbs')),
+       emailTemplateWelcome: () => handlebars.compile(require('./custom/welcome.hbs'))
+     }
+   };
+   ```
 
-Available template customization options:
-- `layout`: Main layout template
-- `login`: Login page
-- `otp`: OTP verification page
-- `signup`: Signup page
-- `emailTemplateWelcome`: Welcome email (HTML)
-- `emailTemplateWelcomeText`: Welcome email (plain text)
-- `emailTemplateOTP`: OTP email (HTML)
-- `emailTemplateOTPText`: OTP email (plain text)
+   Available template override options:
+   - `layout`: Main layout template
+   - `login`: Login page
+   - `otp`: OTP verification page  
+   - `signup`: Signup page
+   - `emailTemplateWelcome`: Welcome email (HTML)
+   - `emailTemplateWelcomeText`: Welcome email (plain text)
+   - `emailTemplateOTP`: OTP email (HTML)
+   - `emailTemplateOTPText`: OTP email (plain text)
 
 ### OAuth Configuration
 For social login support:

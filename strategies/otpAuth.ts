@@ -43,10 +43,10 @@ export const otpAuth: AuthStrategy = {
                 const aUser = await db.getOne(otpAuth.settings.userCollection, { email: username })
                 if (otpAuth.settings.onLoginUser) {
                     try {
-                        otpAuth.settings.onLoginUser(req, res, {access_token: otpCode, user: aUser})
+                        await otpAuth.settings.onLoginUser(req, res, {access_token: otpCode, user: aUser})
                     } catch (error) {
                         console.error('Error in onLoginUser otpAuth override', error)
-                        res.status(401).json({ redirectURL: `${otpAuth.settings.redirectFailUrl}#error=${error.message}` })
+                        return res.status(401).json({ redirectURL: `${otpAuth.settings.redirectFailUrl}#error=${error.message}` })
                     }
                 } 
                 
@@ -86,10 +86,10 @@ export const otpAuth: AuthStrategy = {
         if (aUser) {
             if (otpAuth.settings.onLoginUser) {
                 try {
-                    otpAuth.settings.onLoginUser(req, res, {access_token: otpCode, user: aUser})
+                    await otpAuth.settings.onLoginUser(req, res, {access_token: otpCode, user: aUser})
                 } catch (error) {
                     console.error('Error in onLoginUser otpAuth override', error)
-                    res.status(401).json({ redirectURL: `${otpAuth.settings.redirectFailUrl}#error=${error.message}` })
+                    return res.status(401).json({ redirectURL: `${otpAuth.settings.redirectFailUrl}#error=${error.message}` })
                 }
             }
             const activate = await db.get(`activate-otp:${email}`, otp)

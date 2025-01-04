@@ -105,7 +105,7 @@ export { AuthSettings } from './types';
 
 
 // Initialize authentication for a Codehooks app
-export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callback?: (req:httpRequest, res:httpResponse, payload: any)=>void) {
+export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callback?: (req:httpRequest, res:httpResponse, payload: any)=>Promise<any>) {
     try {
         // merge settings        
         if (appSettings.labels) {
@@ -124,7 +124,7 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
                 
         
         if (callback) {
-            settings.onLoginUser = callback;
+            settings.onLoginUser = callback;            
         }
         
         // Initialize strategies
@@ -358,7 +358,12 @@ async function onSignupUser(req: httpRequest, res: httpResponse, payload: any) {
         const token = jwt.sign({ email: payload.email, id: signupData._id }, settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
         const refreshToken = jwt.sign({ email: payload.email, id: signupData._id }, settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
         if (settings.onSignupUser) {
-            settings.onSignupUser(req, res, {access_token: token, user: signupData})
+            try {
+                await settings.onSignupUser(req, res, {access_token: token, user: signupData})
+            } catch (error) {
+                console.error('Error in onSignupUser override', error)
+                return reject({error: error.message})
+            }
         } 
         if (settings.useCookie) {
             setAuthCookies(res, token, refreshToken, settings);
@@ -419,10 +424,10 @@ async function onLoginUser(req: httpRequest, res: httpResponse, payload: any) {
             const refreshToken = jwt.sign({ email: aUser.email, id: aUser._id }, settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
             if (settings.onLoginUser) {
                 try {
-                    settings.onLoginUser(req, res, {access_token: token, user: aUser})
+                    await settings.onLoginUser(req, res, {access_token: token, user: aUser})
                 } catch (error) {
                     console.error('Error in onLoginUser override', error)
-                    reject({error: error.message})
+                    return reject({error: error.message})
                 }
             } 
             if (settings.useCookie) {

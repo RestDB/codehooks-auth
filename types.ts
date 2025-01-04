@@ -101,6 +101,6 @@ export type AuthSettings = {
         emailTemplateOTP?: () => Function;
         emailTemplateOTPText?: () => Function;
     },
-    onLoginUser?: (req:httpRequest, res:httpResponse, payload: any) => void,
-    onSignupUser?: (req:httpRequest, res:httpResponse, payload: any) => void
+    onLoginUser?: (req:httpRequest, res:httpResponse, payload: any) => Promise<any>,
+    onSignupUser?: (req:httpRequest, res:httpResponse, payload: any) => Promise<any>
 }
