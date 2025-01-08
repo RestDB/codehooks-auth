@@ -169,22 +169,97 @@ The `settings` object allows you to configure various aspects of the authenticat
 ```
 
 ### Event Hooks
-On the Settings object you can provide functions to handle authentication events. The example below shows how to check if the user is allowed to login.
+The library provides several event hooks that allow you to customize the authentication flow:
 
 ```javascript
 {
+    // Called after successful login attempt
     onLoginUser: async (req, res, data) => {
-    const { user } = data;
-    const allowedEmails = ['jane@example.com', 'joe@example.com']; // Add your allowed emails here
+        const { access_token, user } = data;        
+        return new Promise((resolve, reject) => {          
+          // Custom login logic here
+          // Call resolve() to allow login
+          resolve();
+        });
+    },
 
-    return new Promise((resolve, reject) => {
-      if (!allowedEmails.includes(user.email)) {
-        console.error('User not allowed to login');
-        reject('User not allowed to login');
-      }
-      resolve();
-    });
-  }
+    // Called after successful signup attempt
+    onSignupUser: async (req, res, data) => {
+        const { access_token, user } = data;        
+        return new Promise((resolve, reject) => {          
+          // Custom signup logic here
+          // Call reject() to prevent signup
+          reject('User not allowed to signup');
+        });
+    },
+
+    // Hook for customizing static asset serving
+    staticHook: (req, res, next) => {
+        // Add custom headers or logic for static assets
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        res.removeHeader('Pragma');
+        res.removeHeader('Surrogate-Control');
+        next();
+    }
+}
+```
+
+#### Example: Restricting Login Access
+Here's an example of using `onLoginUser` to restrict login access to specific email domains:
+
+```javascript
+const settings = {
+    onLoginUser: async (req, res, data) => {
+        const { user } = data;
+        const allowedEmails = ['jane@example.com', 'joe@example.com']; // Add your allowed emails here
+
+        return new Promise((resolve, reject) => {
+          if (!allowedEmails.includes(user.email)) {
+            console.error('User not allowed to login');
+            reject('User not allowed to login');
+          }
+          resolve();
+        });
+    }
+}
+```
+
+#### Example: Adding Custom User Data on Signup
+Here's an example of using `onSignupUser` to add additional user data:
+
+```javascript
+const settings = {
+    onSignupUser: async (req, res, data) => {
+        const { user } = data;
+        const db = await Datastore.open();
+        
+        // Add custom user data
+        await db.updateOne('users', 
+            { email: user.email },
+            { 
+                $set: { 
+                    role: 'user',
+                    organization: 'default',
+                    createdAt: new Date().toISOString()
+                }
+            }
+        );
+    }
+}
+```
+
+#### Example: Custom Cache Headers
+Here's an example of using `staticHook` to add custom cache headers for static assets:
+
+```javascript
+const settings = {
+    staticHook: (req, res, next) => {
+        // Add cache headers for static assets
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        next();
+    }
 }
 ```
 

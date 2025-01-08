@@ -127,3 +127,12 @@ export function setAuthCookies(res: httpResponse, token: string, refreshToken: s
 
     res.setHeader('Set-Cookie', [refreshTokenCookie, accessTokenCookie]);
 }
+
+const ONE_DAY =  86400000;
+export const setCacheHeaders = (res:httpResponse) => {
+  // Set cache headers
+  res.set('Cache-Control', `public, max-age=${ONE_DAY*15}, s-maxage=${ONE_DAY*15}, immutable`);
+  res.setHeader("Expires", new Date(Date.now() + ONE_DAY*15).toUTCString());
+  res.removeHeader('Pragma');
+  res.removeHeader('Surrogate-Control');
+}

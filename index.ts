@@ -5,7 +5,7 @@ import { githubAuth } from './strategies/githubAuth';
 import { otpAuth } from './strategies/otpAuth';
 import handlebars from 'handlebars';
 import { app, Datastore, httpRequest, httpResponse, nextFunction } from 'codehooks-js';
-import { getJwtForAccessToken, refreshAccessToken, verifyAccessToken, setAuthCookies } from './lib';
+import { getJwtForAccessToken, refreshAccessToken, verifyAccessToken, setAuthCookies, setCacheHeaders } from './lib';
 import * as jwt from 'jsonwebtoken';
 import ms from 'ms';
 import * as cookie from 'cookie';
@@ -38,6 +38,7 @@ const strategies = {
     github: githubAuth,
     otp: otpAuth
   };
+
 
 // Default settings
 let settings: AuthSettings = {
@@ -97,7 +98,8 @@ let settings: AuthSettings = {
         emailTemplateWelcomeText: () => {return handlebars.compile(require('./auth/assets/emailTemplateWelcomeText.hbs'))},
         emailTemplateOTP: () => {return handlebars.compile(require('./auth/assets/emailTemplateOTP.hbs'))},
         emailTemplateOTPText: () => {return handlebars.compile(require('./auth/assets/emailTemplateOTPText.hbs'))}
-    }
+    },
+    staticHook: null
 }
 
 // Export the AuthSettings type that's being imported
@@ -160,11 +162,12 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
                 hasGoogle: settings.google,
                 hasGithub: settings.github
             })
+            setCacheHeaders(res)
             res.send(settings.templateLoaders.layout()({
                 contentBlock: body, 
                 script: 'signin.js'
             }))
-                         
+            
         })
         // signup template
         cohoApp.get('/auth/signup', async (req: httpRequest, res: httpResponse) =>{
@@ -175,6 +178,7 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
                 hasGoogle: settings.google,
                 hasGithub: settings.github
             })
+            setCacheHeaders(res)
             res.send(settings.templateLoaders.layout()({
                 contentBlock: body, 
                 script: 'signin.js'
@@ -191,6 +195,7 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
             const body = settings.templateLoaders.otp()({
                 otpTitle: settings.labels.otpTitle
             })
+            setCacheHeaders(res)
             res.send(settings.templateLoaders.layout()({
                 contentBlock: body, 
                 script: 'otp.js'
@@ -204,7 +209,12 @@ export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callba
         cohoApp.get('/auth/activate/:token', activateAccount)
         
         // serve static assets
-        cohoApp.static({ route: '/auth', directory: '/auth/assets' })
+        if (settings.staticHook) {
+            // allow override of static assets for e.g. cache headers
+            cohoApp.static({ route: '/auth', directory: '/auth/assets' }, settings.staticHook)
+        } else {
+            cohoApp.static({ route: '/auth', directory: '/auth/assets' })
+        }
         
         return 'OK'
     } catch (error) {

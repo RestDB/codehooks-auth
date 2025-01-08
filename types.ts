@@ -102,5 +102,6 @@ export type AuthSettings = {
         emailTemplateOTPText?: () => Function;
     },
     onLoginUser?: (req:httpRequest, res:httpResponse, payload: any) => Promise<any>,
-    onSignupUser?: (req:httpRequest, res:httpResponse, payload: any) => Promise<any>
+    onSignupUser?: (req:httpRequest, res:httpResponse, payload: any) => Promise<any>,
+    staticHook?: (req:httpRequest, res:httpResponse, next: Function) => void,
 }
