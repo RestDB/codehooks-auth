@@ -23,6 +23,7 @@ export type AuthSettings = {
     baseUrl: string,
     redirectSuccessUrl?: string,
     redirectFailUrl?: string,
+    redirectLogoutUrl?: string,
     useCookie?: boolean,
     baseAPIRoutes?: string,
     defaultUserActive?: boolean,

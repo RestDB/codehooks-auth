@@ -51,6 +51,7 @@ let settings: AuthSettings = {
     JWT_REFRESH_TOKEN_SECRET_EXPIRE: '8d',
     redirectSuccessUrl: '/',
     redirectFailUrl: '/',
+    redirectLogoutUrl: '/',
     useCookie: true,
     baseAPIRoutes: '/',
     defaultUserActive: false,
@@ -109,6 +110,18 @@ export { AuthSettings } from './types';
 // Initialize authentication for a Codehooks app
 export function initAuth(cohoApp: typeof app, appSettings?: AuthSettings, callback?: (req:httpRequest, res:httpResponse, payload: any)=>Promise<any>) {
     try {
+        // Validate required settings
+        console.debug('initAuth', settings)
+        if (!appSettings.JWT_ACCESS_TOKEN_SECRET) {
+            console.error('JWT_ACCESS_TOKEN_SECRET must be defined')            
+        }
+        if (!appSettings.JWT_REFRESH_TOKEN_SECRET) {
+            console.error('JWT_REFRESH_TOKEN_SECRET must be defined')            
+        }
+        if (!appSettings.userCollection) {
+            console.error('userCollection must be defined')            
+        }
+        
         // merge settings        
         if (appSettings.labels) {
             settings.labels = { ...settings.labels, ...appSettings.labels };
@@ -367,6 +380,7 @@ async function onSignupUser(req: httpRequest, res: httpResponse, payload: any) {
         console.debug('signupData', signupData)
         const token = jwt.sign({ email: payload.email, id: signupData._id }, settings.JWT_ACCESS_TOKEN_SECRET, { expiresIn: settings.JWT_ACCESS_TOKEN_SECRET_EXPIRE });
         const refreshToken = jwt.sign({ email: payload.email, id: signupData._id }, settings.JWT_REFRESH_TOKEN_SECRET, { expiresIn: settings.JWT_REFRESH_TOKEN_SECRET_EXPIRE });
+        console.debug('onSignupUser token and refresh token', token, refreshToken)
         if (settings.onSignupUser) {
             try {
                 await settings.onSignupUser(req, res, {access_token: token, user: signupData})
@@ -376,8 +390,10 @@ async function onSignupUser(req: httpRequest, res: httpResponse, payload: any) {
             }
         } 
         if (settings.useCookie) {
+            console.debug('setting auth cookies')
             setAuthCookies(res, token, refreshToken, settings);
         }
+        console.debug('sending signup email')
         const emailData = {
             subject: settings.emailSignupData.subject,
             to: payload.email,
@@ -471,6 +487,6 @@ async function logoutUser(req: httpRequest, res: httpResponse) {
     });
 
     res.setHeader('Set-Cookie', [accessTokenCookie, refreshTokenCookie]);
-    res.redirect(302, settings.redirectSuccessUrl);
+    res.redirect(302, settings.redirectLogoutUrl);
 }
 
