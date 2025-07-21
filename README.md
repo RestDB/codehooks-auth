@@ -19,7 +19,7 @@ The **codehooks-auth** library aims to provide a simple and easy to use alternat
 - Static asset serving for auth-related pages
 - Configurable caching for static assets
 
-Check out the React app [live demo example](https://fortuitous-expanse-a616.codehooks.io). Source code is available at Github [here](https://github.com/codehooks-io/codehooks-auth-example-react).
+Check out the React app [live demo example](https://fortuitous-expanse-a616.codehooks.io). Source code is available at Github [here](https://github.com/RestDB/codehooks-io-examples/tree/main/myreactauth).
 
 ## Installation
 To install codehooks-auth, use npm:
